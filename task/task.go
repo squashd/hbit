@@ -2,7 +2,6 @@ package task
 
 import (
 	"context"
-	"encoding/json"
 )
 
 type (
@@ -28,6 +27,6 @@ type (
 		Update(context context.Context, form UpdateTaskForm) (DTO, error)
 		Delete(context context.Context, form DeleteTaskForm) error
 
-		DeleteTasks(msg json.RawMessage) error
+		DeleteUserTasks(userId string) error
 	}
 )

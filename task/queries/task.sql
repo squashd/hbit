@@ -36,3 +36,9 @@ DELETE FROM
     task
 WHERE
     id = ?;
+
+-- name: DeleteUserTasks :exec
+DELETE FROM
+    task
+WHERE
+    user_id = ?;

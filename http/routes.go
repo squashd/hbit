@@ -2,34 +2,65 @@ package http
 
 import "net/http"
 
+func (s *serverMonolith) registerAuthRoutes(router *http.ServeMux, authHandler *AuthHandler) {
+	router.HandleFunc("POST /login", authHandler.Login)
+	router.HandleFunc("POST /register", authHandler.Register)
+	router.HandleFunc("POST /revoke", s.AdminMiddleware(authHandler.Revoke))
+}
+
+func (s *serverMonolith) registerTaskRoutes(router *http.ServeMux, taskHandler *TaskHandler) {
+	router.HandleFunc("GET /tasks", s.AuthMiddleware(taskHandler.FindAll))
+	router.HandleFunc("POST /tasks", s.AuthMiddleware(taskHandler.Create))
+	router.HandleFunc("PUT /tasks", s.AuthMiddleware(taskHandler.Update))
+	router.HandleFunc("DELETE /tasks", s.AuthMiddleware(taskHandler.Delete))
+}
+
+func (s *serverMonolith) registerCharacterRoutes(router *http.ServeMux, charHandler *CharacterHandler) {
+	router.HandleFunc("GET /characters/{id}", s.AuthMiddleware(charHandler.CharacterGet))
+	router.HandleFunc("POST /characters", s.AuthMiddleware(charHandler.CharacterCreate))
+	router.HandleFunc("PUT /characters/{id}", s.AuthMiddleware(charHandler.CharacterUpdate))
+	router.HandleFunc("DELETE /characters/{id}", s.AuthMiddleware(charHandler.CharacterDelete))
+}
+
+func (s *serverMonolith) registerQuestRoutes(router *http.ServeMux, questHandler *QuestHandler) {
+	router.HandleFunc("GET /quests", s.AuthMiddleware(questHandler.GetAll))
+}
+
+func (s *serverMonolith) registerAchievementRoutes(router *http.ServeMux, achHandler *AchievementHandler) {
+	router.HandleFunc("GET /achievements", s.AuthMiddleware(achHandler.AchievementsGet))
+}
+
+func (s *serverMonolith) registerUserRoutes(router *http.ServeMux, userHandler *UserHandler) {
+	router.HandleFunc("GET /settings", s.AuthMiddleware(userHandler.SettingsGet))
+	router.HandleFunc("PUT /settings", s.AuthMiddleware(userHandler.SettingsUpdate))
+}
+
 func (s *serverMonolith) RegisterRoutes() http.Handler {
-	mainRouter := http.NewServeMux()
-	mainRouter.HandleFunc("GET /achievements", s.AuthMiddleware(s.handleAchievementsGet))
+	router := http.NewServeMux()
 
-	mainRouter.HandleFunc("POST /login", s.handleLogin)
-	mainRouter.HandleFunc("POST /register", s.handleRegister)
-	mainRouter.HandleFunc("POST /revoke", s.AdminMiddleware(s.handleRevoke))
+	authHandler := NewAuthHandler(s.authSvc)
+	s.registerAuthRoutes(router, authHandler)
 
-	mainRouter.HandleFunc("GET /tasks", s.AuthMiddleware(s.handleTaskFindAll))
-	mainRouter.HandleFunc("POST /tasks", s.AuthMiddleware(s.handleTaskCreate))
-	mainRouter.HandleFunc("PUT /tasks", s.AuthMiddleware(s.handleTaskUpdate))
-	mainRouter.HandleFunc("DELETE /tasks", s.AuthMiddleware(s.handleTaskDelete))
+	taskHandler := NewTaskHandler(s.taskSvc)
+	s.registerTaskRoutes(router, taskHandler)
 
-	mainRouter.HandleFunc("GET /characters/{id}", s.AuthMiddleware(s.handleCharacterGet))
-	mainRouter.HandleFunc("POST /characters", s.AuthMiddleware(s.handleCharacterCreate))
-	mainRouter.HandleFunc("PUT /characters/{id}", s.AuthMiddleware(s.handleCharacterUpdate))
-	mainRouter.HandleFunc("DELETE /characters/{id}", s.AuthMiddleware(s.handleCharacterDelete))
+	charHandler := NewCharacterHandler(s.charSvc)
+	s.registerCharacterRoutes(router, charHandler)
 
-	mainRouter.HandleFunc("GET /quests", s.AuthMiddleware(s.handleQuestGetAll))
+	achHandler := NewAchievementHandler(s.achSvc)
+	s.registerAchievementRoutes(router, achHandler)
 
-	mainRouter.HandleFunc("GET /achievements", s.AuthMiddleware(s.handleAchievementsGet))
+	questHandler := NewQuestHandler(s.questSvc)
+	s.registerQuestRoutes(router, questHandler)
 
-	mainRouter.HandleFunc("GET /settings", s.AuthMiddleware(s.handleSettingsGet))
-	mainRouter.HandleFunc("PUT /settings", s.AuthMiddleware(s.handleSettingsUpdate))
+	userHandler := NewUserHandler(s.userSvc)
+	s.registerUserRoutes(router, userHandler)
 
 	adminRouter := http.NewServeMux()
-	adminRouter.HandleFunc("GET /characters", s.AuthMiddleware(s.handleCharacterGetAll))
-	mainRouter.Handle("/admin/", s.AdminRouterMiddleware(adminRouter))
 
-	return mainRouter
+	characterHandler := NewCharacterHandler(s.charSvc)
+	adminRouter.HandleFunc("GET /characters", s.AuthMiddleware(characterHandler.CharacterGetAll))
+	router.Handle("/admin/", http.StripPrefix("/admin", s.AdminRouterMiddleware(adminRouter)))
+
+	return router
 }

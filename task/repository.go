@@ -35,3 +35,7 @@ func (r *repository) Update(ctx context.Context, data UpdateTaskData) (database.
 func (r *repository) Delete(ctx context.Context, id string) error {
 	return r.queries.DeleteTask(ctx, id)
 }
+
+func (r *repository) DeleteUserTasks(userId string) error {
+	return r.queries.DeleteUserTasks(context.Background(), userId)
+}

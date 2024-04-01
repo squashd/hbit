@@ -13,6 +13,11 @@ type repository struct {
 	queries *database.Queries
 }
 
+// DeleteUser implements Repository.
+func (r *repository) DeleteUser(userId string) error {
+	return r.queries.DeleteUser(context.Background(), userId)
+}
+
 func NewRepository(db *sql.DB) Repository {
 	queries := database.New(db)
 	return &repository{

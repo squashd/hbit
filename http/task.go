@@ -6,8 +6,16 @@ import (
 	"github.com/SQUASHD/hbit/task"
 )
 
-func (s *ServerMonolith) handleTaskFindAll(w http.ResponseWriter, r *http.Request, userId string) {
-	tasks, err := s.taskSvc.List(r.Context(), userId)
+type TaskHandler struct {
+	taskSvc task.Service
+}
+
+func NewTaskHandler(taskSvc task.Service) *TaskHandler {
+	return &TaskHandler{taskSvc: taskSvc}
+}
+
+func (h *TaskHandler) FindAll(w http.ResponseWriter, r *http.Request, userId string) {
+	tasks, err := h.taskSvc.List(r.Context(), userId)
 	if err != nil {
 		Error(w, r, err)
 		return
@@ -15,8 +23,7 @@ func (s *ServerMonolith) handleTaskFindAll(w http.ResponseWriter, r *http.Reques
 	RespondWithJSON(w, http.StatusOK, tasks)
 }
 
-func (h *ServerMonolith) Get(w http.ResponseWriter, r *http.Request, requestedById string) {
-
+func (h *TaskHandler) Get(w http.ResponseWriter, r *http.Request, requestedById string) {
 	todos, err := h.taskSvc.List(r.Context(), requestedById)
 	if err != nil {
 		Error(w, r, err)
@@ -26,7 +33,7 @@ func (h *ServerMonolith) Get(w http.ResponseWriter, r *http.Request, requestedBy
 
 }
 
-func (h *ServerMonolith) handleTaskCreate(w http.ResponseWriter, r *http.Request, requestedById string) {
+func (h *TaskHandler) Create(w http.ResponseWriter, r *http.Request, requestedById string) {
 	var data task.CreateTaskData
 
 	if err := Decode(r, &data); err != nil {
@@ -48,7 +55,7 @@ func (h *ServerMonolith) handleTaskCreate(w http.ResponseWriter, r *http.Request
 	RespondWithJSON(w, http.StatusCreated, todo)
 }
 
-func (h *ServerMonolith) handleTaskUpdate(w http.ResponseWriter, r *http.Request, requestedById string) {
+func (h *TaskHandler) Update(w http.ResponseWriter, r *http.Request, requestedById string) {
 	id := r.PathValue("id")
 	var data task.UpdateTaskData
 
@@ -72,7 +79,7 @@ func (h *ServerMonolith) handleTaskUpdate(w http.ResponseWriter, r *http.Request
 	RespondWithJSON(w, http.StatusOK, todo)
 }
 
-func (h *ServerMonolith) handleTaskDelete(w http.ResponseWriter, r *http.Request, requestedById string) {
+func (h *TaskHandler) Delete(w http.ResponseWriter, r *http.Request, requestedById string) {
 	id := r.PathValue("id")
 
 	form := task.DeleteTaskForm{

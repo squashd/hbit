@@ -7,8 +7,16 @@ import (
 	"github.com/SQUASHD/hbit/user/database"
 )
 
-func (s *ServerMonolith) handleSettingsGet(w http.ResponseWriter, r *http.Request, requestedById string) {
-	settings, err := s.userSvc.GetSettings(r.Context(), requestedById)
+type UserHandler struct {
+	userSvc user.Service
+}
+
+func NewUserHandler(userSvc user.Service) *UserHandler {
+	return &UserHandler{userSvc: userSvc}
+}
+
+func (h *UserHandler) SettingsGet(w http.ResponseWriter, r *http.Request, requestedById string) {
+	settings, err := h.userSvc.GetSettings(r.Context(), requestedById)
 	if err != nil {
 		Error(w, r, err)
 		return
@@ -17,7 +25,7 @@ func (s *ServerMonolith) handleSettingsGet(w http.ResponseWriter, r *http.Reques
 	RespondWithJSON(w, http.StatusOK, settings)
 }
 
-func (s *ServerMonolith) handleSettingsUpdate(w http.ResponseWriter, r *http.Request, requestedById string) {
+func (h *UserHandler) SettingsUpdate(w http.ResponseWriter, r *http.Request, requestedById string) {
 	id := r.PathValue("id")
 	var data database.UpdateUserSettingsParams
 
@@ -32,7 +40,7 @@ func (s *ServerMonolith) handleSettingsUpdate(w http.ResponseWriter, r *http.Req
 		RequestedById:            requestedById,
 	}
 
-	settings, err := s.userSvc.UpdateSettings(r.Context(), form)
+	settings, err := h.userSvc.UpdateSettings(r.Context(), form)
 	if err != nil {
 		Error(w, r, err)
 		return

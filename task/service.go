@@ -2,10 +2,9 @@ package task
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/SQUASHD/hbit"
-	"github.com/SQUASHD/hbit/events/eventpub"
+	"github.com/wagslane/go-rabbitmq"
 )
 
 type (
@@ -15,23 +14,24 @@ type (
 		Read(ctx context.Context, id string) (Task, error)
 		Update(ctx context.Context, data UpdateTaskData) (Task, error)
 		Delete(ctx context.Context, id string) error
+		DeleteUserTasks(userId string) error
 	}
 
 	service struct {
 		repo      Repository
-		publisher eventpub.Publisher
+		publisher *rabbitmq.Publisher
 	}
 )
 
-func NewService(repo Repository, publisher eventpub.Publisher) Service {
+func NewService(repo Repository, publisher *rabbitmq.Publisher) Service {
 	return &service{
 		repo:      repo,
 		publisher: publisher,
 	}
 }
 
-func (s *service) List(ctx context.Context, RequestedById string) ([]DTO, error) {
-	todos, err := s.repo.List(ctx, RequestedById)
+func (s *service) List(ctx context.Context, requestedById string) ([]DTO, error) {
+	todos, err := s.repo.List(ctx, requestedById)
 	if err != nil {
 		return nil, err
 	}
@@ -77,6 +77,6 @@ func (s *service) Delete(ctx context.Context, form DeleteTaskForm) error {
 	return nil
 }
 
-func (s *service) DeleteTasks(msg json.RawMessage) error {
-	panic("unimplemented")
+func (s *service) DeleteUserTasks(userId string) error {
+	return s.repo.DeleteUserTasks(userId)
 }

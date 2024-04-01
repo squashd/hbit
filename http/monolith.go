@@ -11,7 +11,7 @@ import (
 )
 
 type (
-	ServerMonolith struct {
+	serverMonolith struct {
 		serverConf config.ServerConfig
 		jwtConf    config.JwtConfig
 		authSvc    auth.Service
@@ -32,8 +32,8 @@ func NewServerMonolith(
 	achSvc achievement.Service,
 	taskSvc task.Service,
 	userSvc user.Service,
-) *ServerMonolith {
-	return &ServerMonolith{
+) *serverMonolith {
+	return &serverMonolith{
 		serverConf: serverConf,
 		jwtConf:    jwtConf,
 		authSvc:    authSvc,

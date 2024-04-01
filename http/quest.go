@@ -3,11 +3,20 @@ package http
 import (
 	"net/http"
 
+	"github.com/SQUASHD/hbit/quest"
 	"github.com/SQUASHD/hbit/quest/database"
 )
 
-func (s *ServerMonolith) handleQuestGetAll(w http.ResponseWriter, r *http.Request, userId string) {
-	quests, err := s.questSvc.ListQuests(r.Context(), userId)
+type QuestHandler struct {
+	questSvc quest.Service
+}
+
+func NewQuestHandler(questSvc quest.Service) *QuestHandler {
+	return &QuestHandler{questSvc: questSvc}
+}
+
+func (h *QuestHandler) GetAll(w http.ResponseWriter, r *http.Request, userId string) {
+	quests, err := h.questSvc.ListQuests(r.Context(), userId)
 	if err != nil {
 		Error(w, r, err)
 		return
@@ -16,14 +25,14 @@ func (s *ServerMonolith) handleQuestGetAll(w http.ResponseWriter, r *http.Reques
 	RespondWithJSON(w, http.StatusOK, quests)
 }
 
-func (s *ServerMonolith) handleQuestCreate(w http.ResponseWriter, r *http.Request) {
+func (h *QuestHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var data database.CreateQuestParams
 	if err := Decode(r, &data); err != nil {
 		Error(w, r, err)
 		return
 	}
 
-	quest, err := s.questSvc.CreateQuest(r.Context(), data)
+	quest, err := h.questSvc.CreateQuest(r.Context(), data)
 	if err != nil {
 		Error(w, r, err)
 		return
@@ -32,7 +41,7 @@ func (s *ServerMonolith) handleQuestCreate(w http.ResponseWriter, r *http.Reques
 	RespondWithJSON(w, http.StatusCreated, quest)
 }
 
-func (s *ServerMonolith) handleQuestUpdate(w http.ResponseWriter, r *http.Request) {
+func (h *QuestHandler) Update(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
 	var data database.UpdateQuestParams
@@ -43,7 +52,7 @@ func (s *ServerMonolith) handleQuestUpdate(w http.ResponseWriter, r *http.Reques
 
 	data.ID = id
 
-	quest, err := s.questSvc.UpdateQuest(r.Context(), data)
+	quest, err := h.questSvc.UpdateQuest(r.Context(), data)
 	if err != nil {
 		Error(w, r, err)
 		return
@@ -52,9 +61,9 @@ func (s *ServerMonolith) handleQuestUpdate(w http.ResponseWriter, r *http.Reques
 	RespondWithJSON(w, http.StatusOK, quest)
 }
 
-func (s *ServerMonolith) handleQuestDelete(w http.ResponseWriter, r *http.Request) {
+func (h *QuestHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	if err := s.questSvc.DeleteQuest(r.Context(), id); err != nil {
+	if err := h.questSvc.DeleteQuest(r.Context(), id); err != nil {
 		Error(w, r, err)
 		return
 	}

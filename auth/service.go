@@ -6,6 +6,7 @@ import (
 	"github.com/SQUASHD/hbit"
 	"github.com/SQUASHD/hbit/auth/database"
 	"github.com/SQUASHD/hbit/config"
+	"github.com/wagslane/go-rabbitmq"
 )
 
 type (
@@ -13,6 +14,7 @@ type (
 		FindUserByUsername(ctx context.Context, username string) (database.Auth, error)
 		CreateAuth(ctx context.Context, data database.CreateAuthParams) (database.Auth, error)
 		FindRevokeToken(ctx context.Context, token string) error
+		DeleteUser(userId string) error
 		RevokeToken(ctx context.Context, form RevokeTokenParams) error
 		IsAdmin(ctx context.Context, userId string) (bool, error)
 	}
@@ -20,13 +22,19 @@ type (
 	service struct {
 		jwtConfig config.JwtConfig
 		repo      Repository
+		publisher *rabbitmq.Publisher
 	}
 )
 
-func NewService(repo Repository, jwtConfig config.JwtConfig) Service {
+func NewService(
+	repo Repository,
+	jwtConfig config.JwtConfig,
+	publisher *rabbitmq.Publisher,
+) Service {
 	return &service{
 		jwtConfig: jwtConfig,
 		repo:      repo,
+		publisher: publisher,
 	}
 }
 
@@ -189,4 +197,12 @@ func (s *service) IsAdmin(ctx context.Context, userId string) (bool, error) {
 		return false, err
 	}
 	return true, nil
+}
+
+func (s *service) DeleteUser(userId string) error {
+	err := s.repo.DeleteUser(userId)
+	if err != nil {
+		return err
+	}
+	return nil
 }

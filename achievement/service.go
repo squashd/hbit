@@ -2,12 +2,12 @@ package achievement
 
 import (
 	"context"
-	"encoding/json"
 )
 
 type (
 	Repository interface {
 		ListUserAchievements(ctx context.Context, userId string) (UserAchievements, error)
+		CreateTaskDoneEvent(ctx context.Context, userId string) error
 	}
 
 	service struct {
@@ -21,14 +21,16 @@ func NewService(r Repository) Service {
 	}
 }
 
+// TaskDone implements Service.
+func (s *service) TaskDone(userId string) error {
+	return s.repo.CreateTaskDoneEvent(context.Background(), userId)
+}
+
+// UserDeleted implements Service.
+func (s *service) UserDeleted(userId string) error {
+	panic("unimplemented")
+}
+
 func (s *service) GetUserAchievements(ctx context.Context, userId string) (UserAchievements, error) {
 	return s.repo.ListUserAchievements(ctx, userId)
-}
-
-func (s *service) TaskComplet(msg json.RawMessage) (string, error) {
-	panic("unimplemented")
-}
-
-func (s *service) UserDeleted(msg json.RawMessage) (string, error) {
-	panic("unimplemented")
 }

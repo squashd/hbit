@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -12,100 +13,56 @@ import (
 	"github.com/SQUASHD/hbit/auth"
 	"github.com/SQUASHD/hbit/character"
 	"github.com/SQUASHD/hbit/config"
-	"github.com/SQUASHD/hbit/events/eventhandler"
-	"github.com/SQUASHD/hbit/events/eventpub"
-	"github.com/SQUASHD/hbit/events/eventsub"
 	"github.com/SQUASHD/hbit/http"
 	"github.com/SQUASHD/hbit/quest"
 	"github.com/SQUASHD/hbit/task"
 	"github.com/SQUASHD/hbit/user"
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
+	"github.com/wagslane/go-rabbitmq"
 )
 
 func main() {
 
-	// Set up JWT Config
-	jwtSecret := os.Getenv("JWT_SECRET")
-	if jwtSecret == "" {
-		log.Fatal("JWT_SECRET is not set")
-	}
-	jwtConfig := config.NewJwtConfig(jwtSecret, "access", "refresh", 1*60, 24*60*60)
-
-	// Set up Server Config
-	serverConfig, err := config.NewServerConfigFromEnv()
+	serverConfig, jwtConfig, err := setupConfig()
 	if err != nil {
-		log.Fatalf("cannot create server config: %s", err)
+		log.Fatalf("cannot setup config: %s", err)
 	}
 
-	// Set up Auth Service
-	authDb, err := auth.NewDatabase()
+	authSvc, authCleanup, err := setUpAuthService(jwtConfig)
 	if err != nil {
-		log.Fatalf("cannot create auth database: %s", err)
+		log.Fatalf("cannot create auth service: %s", err)
 	}
-	authRepo := auth.NewRepository(authDb)
-	authSvc := auth.NewService(authRepo, jwtConfig)
+	defer authCleanup()
 
-	// Set up Character Service
-	charDb, err := character.NewDatabase()
+	charSvc, charCleanup, err := setUpCharacterService()
 	if err != nil {
-		log.Fatalf("cannot create character database: %s", err)
+		log.Fatalf("cannot create character service: %s", err)
 	}
-	charRepo := character.NewRepository(charDb)
-	charSvc := character.NewService(charRepo)
+	defer charCleanup()
 
-	// Set up Quest Service
-	questDb, err := quest.NewDatabase()
+	questSvc, questCleanup, err := setUpQuestService()
 	if err != nil {
-		log.Fatalf("cannot create quest database: %s", err)
+		log.Fatalf("cannot create quest service: %s", err)
 	}
-	questRepo := quest.NewRepository(questDb)
-	questSvc := quest.NewService(questRepo)
+	defer questCleanup()
 
-	// Set up Achievement Service
-	achievementDb, err := achievement.NewDatabase()
+	achievementSvc, taskSubscriber, achCleanup, err := setUpAchievementService(config.RabbitmqConfig{})
 	if err != nil {
-		log.Fatalf("cannot create achievement database: %s", err)
+		log.Fatalf("cannot create achievement service: %s", err)
 	}
-	achievementRepo := achievement.NewRepository(achievementDb)
-	achievementSvc := achievement.NewService(achievementRepo)
+	defer achCleanup()
 
-	// Set up Task Service
-	rabbitmqConf := config.RabbitmqConnnection{}
-	pubOpts := eventpub.PublisherOptions{
-		ExchangeName: "task_updates",
-		ExchangeType: "topic",
-	}
-	taskEventPublisher, taskPublisherCleanup, err := eventpub.NewRabbitMQPublisher(pubOpts, rabbitmqConf)
+	taskSvc, taskCleanup, err := setUpTaskService()
 	if err != nil {
-		log.Fatalf("cannot create rabbitmq publisher: %s", err)
+		log.Fatalf("cannot create task service: %s", err)
 	}
+	defer taskCleanup()
 
-	taskDb, err := task.NewDatabase()
+	userSvc, userCleanup, err := setUpUserService()
 	if err != nil {
-		log.Fatalf("cannot create task database: %s", err)
+		log.Fatalf("cannot create user service: %s", err)
 	}
-	taskRepo := task.NewRepository(taskDb)
-	taskSvc := task.NewService(taskRepo, taskEventPublisher)
-
-	taskHandler := eventhandler.TaskHandler(taskSvc)
-	subOpts := eventsub.SubscriberOptions{
-		ExchangeName: "task_updates",
-		ExchangeType: "topic",
-		QueueName:    "",
-		RoutingKey:   "task.*",
-	}
-	taskSubscriber, tasksubscriberCleanup, err := eventsub.NewSubscriber(subOpts, rabbitmqConf)
-	if err != nil {
-		log.Fatalf("cannot create rabbitmq subscriber: %s", err)
-	}
-
-	// Set up User Service
-	userDb, err := user.NewDatabase()
-	if err != nil {
-		log.Fatalf("cannot create user database: %s", err)
-	}
-	userRepo := user.NewReposiory(userDb)
-	userSvc := user.NewService(userRepo)
+	defer userCleanup()
 
 	monolith := http.NewServerMonolith(serverConfig, jwtConfig, authSvc, charSvc, questSvc, achievementSvc, taskSvc, userSvc)
 	server, err := http.NewServer(serverConfig, monolith.RegisterRoutes())
@@ -128,33 +85,27 @@ func main() {
 			log.Fatalf("Server shutdown failure: %v", err)
 		}
 
-		taskPublisherCleanup()
-		tasksubscriberCleanup()
-
-		if err = authDb.Close(); err != nil {
-			log.Fatalf("Database shutdown failure: %v", err)
-		}
-		if err = taskDb.Close(); err != nil {
-			log.Fatalf("Database shutdown failure: %v", err)
-		}
-		if err = questDb.Close(); err != nil {
-			log.Fatalf("Database shutdown failure: %v", err)
-		}
-		if err = charDb.Close(); err != nil {
-			log.Fatalf("Database shutdown failure: %v", err)
-		}
-		if err = achievementDb.Close(); err != nil {
-			log.Fatalf("Database shutdown failure: %v", err)
-		}
-		if err = userDb.Close(); err != nil {
-			log.Fatalf("Database shutdown failure: %v", err)
-		}
-
 		close(closed)
 	}()
 
 	go func() {
-		if err := taskSubscriber.StartConsuming(context.Background(), taskHandler); err != nil {
+		if err := taskSubscriber.Run(
+			func(d rabbitmq.Delivery) rabbitmq.Action {
+				msg, err := json.Marshal(d.Body)
+				if err != nil {
+					log.Printf("cannot marshal message: %s", err)
+					return rabbitmq.NackDiscard
+				}
+				switch d.Type {
+				case "task_done":
+					log.Printf("task done event: %s", msg)
+				default:
+					log.Printf("unknown event: %s", d.Type)
+					return rabbitmq.NackDiscard
+				}
+				return rabbitmq.Ack
+			},
+		); err != nil {
 			log.Fatalf("cannot start consuming: %s", err)
 		}
 	}()
@@ -167,4 +118,150 @@ func main() {
 	<-closed
 	log.Println("Server closed")
 
+}
+
+func setUpAuthService(jwtConf config.JwtConfig) (auth.Service, func(), error) {
+	rabbitmqConf := config.RabbitmqConfig{}
+	connStr := config.NewRabbitConnectionString(rabbitmqConf)
+	conn, err := rabbitmq.NewConn(connStr)
+	if err != nil {
+		return nil, nil, err
+	}
+	cleanup := func() {
+		conn.Close()
+	}
+	authPub, err := rabbitmq.NewPublisher(
+		conn,
+		rabbitmq.WithPublisherOptionsLogging,
+		rabbitmq.WithPublisherOptionsExchangeName("task_updates"),
+		rabbitmq.WithPublisherOptionsExchangeDeclare,
+	)
+	if err != nil {
+		return nil, cleanup, err
+	}
+	authDb, err := auth.NewDatabase()
+	if err != nil {
+		return nil, cleanup, err
+	}
+
+	cleanup = func() {
+		authDb.Close()
+		cleanup()
+	}
+
+	authRepo := auth.NewRepository(authDb)
+	authSvc := auth.NewService(authRepo, jwtConf, authPub)
+	return authSvc, cleanup, nil
+}
+
+func setUpCharacterService() (character.Service, func(), error) {
+	charDb, err := character.NewDatabase()
+	if err != nil {
+		return nil, nil, err
+	}
+	cleanup := func() {
+		charDb.Close()
+	}
+	charRepo := character.NewRepository(charDb)
+	charSvc := character.NewService(charRepo)
+	return charSvc, cleanup, nil
+}
+
+func setUpQuestService() (quest.Service, func(), error) {
+	questDb, err := quest.NewDatabase()
+	if err != nil {
+		return nil, nil, err
+	}
+	cleanup := func() {
+		questDb.Close()
+	}
+	questRepo := quest.NewRepository(questDb)
+	questSvc := quest.NewService(questRepo)
+	return questSvc, cleanup, nil
+}
+
+func setUpAchievementService(rabbitmqConf config.RabbitmqConfig) (achievement.Service, *rabbitmq.Consumer, func(), error) {
+	connStr := config.NewRabbitConnectionString(rabbitmqConf)
+	conn, err := rabbitmq.NewConn(connStr)
+
+	cleanup := func() {
+		conn.Close()
+	}
+	if err != nil {
+		return nil, nil, cleanup, err
+	}
+	consumer, err := rabbitmq.NewConsumer(
+		conn,
+		"my_queue",
+		rabbitmq.WithConsumerOptionsRoutingKey("my_routing_key"),
+		rabbitmq.WithConsumerOptionsExchangeName("events"),
+		rabbitmq.WithConsumerOptionsExchangeDeclare,
+	)
+	achievementDb, err := achievement.NewDatabase()
+	if err != nil {
+		return nil, nil, cleanup, err
+	}
+	achievementRepo := achievement.NewRepository(achievementDb)
+	achievementSvc := achievement.NewService(achievementRepo)
+	return achievementSvc, consumer, cleanup, nil
+}
+
+func setUpTaskService() (task.Service, func(), error) {
+	rabbitmqConf := config.RabbitmqConfig{}
+	connStr := config.NewRabbitConnectionString(rabbitmqConf)
+	conn, err := rabbitmq.NewConn(connStr)
+	cleanup := func() {
+		conn.Close()
+	}
+	if err != nil {
+		return nil, cleanup, err
+	}
+	taskPub, err := rabbitmq.NewPublisher(
+		conn,
+		rabbitmq.WithPublisherOptionsLogging,
+		rabbitmq.WithPublisherOptionsExchangeName("task_updates"),
+		rabbitmq.WithPublisherOptionsExchangeDeclare,
+	)
+
+	taskDb, err := task.NewDatabase()
+	if err != nil {
+		return nil, cleanup, err
+	}
+
+	cleanup = func() {
+		taskDb.Close()
+		cleanup()
+	}
+
+	taskRepo := task.NewRepository(taskDb)
+	taskSvc := task.NewService(taskRepo, taskPub)
+	return taskSvc, cleanup, nil
+}
+
+func setUpUserService() (user.Service, func(), error) {
+	userDb, err := user.NewDatabase()
+	if err != nil {
+		log.Fatalf("cannot create user database: %s", err)
+	}
+	cleanup := func() {
+		userDb.Close()
+	}
+	userRepo := user.NewReposiory(userDb)
+	userSvc := user.NewService(userRepo)
+	return userSvc, cleanup, nil
+}
+
+func setupConfig() (config.ServerConfig, config.JwtConfig, error) {
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		return config.ServerConfig{}, config.JwtConfig{}, fmt.Errorf("JWT_SECRET is required")
+	}
+	jwtConfig := config.NewJwtConfig(jwtSecret, "access", "refresh", 1*60, 24*60*60)
+
+	serverConfig, err := config.NewServerConfigFromEnv()
+	if err != nil {
+		return config.ServerConfig{}, config.JwtConfig{}, err
+	}
+
+	return serverConfig, jwtConfig, nil
 }
