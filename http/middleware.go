@@ -42,7 +42,7 @@ func LoggerMiddleware(next http.Handler) http.Handler {
 
 type AuthedHandler func(w http.ResponseWriter, r *http.Request, userId string)
 
-func (s *Server) AuthMiddleware(next AuthedHandler) http.HandlerFunc {
+func (s *ServerMonolith) AuthMiddleware(next AuthedHandler) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userId, err := s.authenticateUser(w, r)
 		if err != nil {
@@ -54,7 +54,7 @@ func (s *Server) AuthMiddleware(next AuthedHandler) http.HandlerFunc {
 	})
 }
 
-func (s *Server) AdminMiddleware(next http.HandlerFunc) http.HandlerFunc {
+func (s *ServerMonolith) AdminMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userId, err := s.authenticateUser(w, r)
 		if err != nil {
@@ -72,7 +72,7 @@ func (s *Server) AdminMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	})
 }
 
-func (s *Server) AdminRouterMiddleware(next http.Handler) http.Handler {
+func (s *ServerMonolith) AdminRouterMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userId, err := s.authenticateUser(w, r)
 		if err != nil {
@@ -90,7 +90,7 @@ func (s *Server) AdminRouterMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (s *Server) authenticateUser(w http.ResponseWriter, r *http.Request) (userID string, err error) {
+func (s *ServerMonolith) authenticateUser(w http.ResponseWriter, r *http.Request) (userID string, err error) {
 	refreshToken := GetRefreshTokenFromCookie(r)
 	accessToken := GetAccessTokenFromCookie(r)
 	if refreshToken == "" {

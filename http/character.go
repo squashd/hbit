@@ -6,7 +6,7 @@ import (
 	"github.com/SQUASHD/hbit/character"
 )
 
-func (s *Server) handleCharacterGetAll(w http.ResponseWriter, r *http.Request, requestedById string) {
+func (s *ServerMonolith) handleCharacterGetAll(w http.ResponseWriter, r *http.Request, requestedById string) {
 	characters, err := s.charSvc.List(r.Context())
 	if err != nil {
 		Error(w, r, err)
@@ -15,7 +15,7 @@ func (s *Server) handleCharacterGetAll(w http.ResponseWriter, r *http.Request, r
 	RespondWithJSON(w, http.StatusOK, characters)
 }
 
-func (s *Server) handleCharacterGet(w http.ResponseWriter, r *http.Request, requestedById string) {
+func (s *ServerMonolith) handleCharacterGet(w http.ResponseWriter, r *http.Request, requestedById string) {
 	id := r.PathValue("id")
 
 	form := character.ReadCharacterForm{
@@ -32,7 +32,7 @@ func (s *Server) handleCharacterGet(w http.ResponseWriter, r *http.Request, requ
 	RespondWithJSON(w, http.StatusOK, character)
 }
 
-func (s *Server) handleCharacterCreate(w http.ResponseWriter, r *http.Request, requestedById string) {
+func (s *ServerMonolith) handleCharacterCreate(w http.ResponseWriter, r *http.Request, requestedById string) {
 	var data character.CreateCharacterData
 
 	if err := Decode(r, &data); err != nil {
@@ -54,7 +54,7 @@ func (s *Server) handleCharacterCreate(w http.ResponseWriter, r *http.Request, r
 	RespondWithJSON(w, http.StatusCreated, character)
 }
 
-func (s *Server) handleCharacterUpdate(w http.ResponseWriter, r *http.Request, requestedById string) {
+func (s *ServerMonolith) handleCharacterUpdate(w http.ResponseWriter, r *http.Request, requestedById string) {
 	id := r.PathValue("id")
 
 	var data character.UpdateCharacterData
@@ -78,7 +78,7 @@ func (s *Server) handleCharacterUpdate(w http.ResponseWriter, r *http.Request, r
 	RespondWithJSON(w, http.StatusOK, character)
 }
 
-func (s *Server) handleCharacterDelete(w http.ResponseWriter, r *http.Request, requestedById string) {
+func (s *ServerMonolith) handleCharacterDelete(w http.ResponseWriter, r *http.Request, requestedById string) {
 	id := r.PathValue("id")
 
 	form := character.DeleteCharacterForm{

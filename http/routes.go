@@ -2,7 +2,7 @@ package http
 
 import "net/http"
 
-func (s *Server) RegisterRoutes() http.Handler {
+func (s *serverMonolith) RegisterRoutes() http.Handler {
 	mainRouter := http.NewServeMux()
 	mainRouter.HandleFunc("GET /achievements", s.AuthMiddleware(s.handleAchievementsGet))
 

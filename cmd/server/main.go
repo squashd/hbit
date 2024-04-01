@@ -18,6 +18,7 @@ import (
 	"github.com/SQUASHD/hbit/http"
 	"github.com/SQUASHD/hbit/quest"
 	"github.com/SQUASHD/hbit/task"
+	"github.com/SQUASHD/hbit/user"
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
 )
 
@@ -69,8 +70,6 @@ func main() {
 	achievementSvc := achievement.NewService(achievementRepo)
 
 	// Set up Task Service
-
-	// Set up Task Event Publisher
 	rabbitmqConf := config.RabbitmqConnnection{}
 	pubOpts := eventpub.PublisherOptions{
 		ExchangeName: "task_updates",
@@ -100,7 +99,16 @@ func main() {
 		log.Fatalf("cannot create rabbitmq subscriber: %s", err)
 	}
 
-	server, err := http.NewServer(serverConfig, jwtConfig, authSvc, charSvc, questSvc, achievementSvc, taskSvc)
+	// Set up User Service
+	userDb, err := user.NewDatabase()
+	if err != nil {
+		log.Fatalf("cannot create user database: %s", err)
+	}
+	userRepo := user.NewReposiory(userDb)
+	userSvc := user.NewService(userRepo)
+
+	monolith := http.NewServerMonolith(serverConfig, jwtConfig, authSvc, charSvc, questSvc, achievementSvc, taskSvc, userSvc)
+	server, err := http.NewServer(serverConfig, monolith.RegisterRoutes())
 	if err != nil {
 		log.Fatalf("cannot create server: %s", err)
 	}
@@ -136,6 +144,9 @@ func main() {
 			log.Fatalf("Database shutdown failure: %v", err)
 		}
 		if err = achievementDb.Close(); err != nil {
+			log.Fatalf("Database shutdown failure: %v", err)
+		}
+		if err = userDb.Close(); err != nil {
 			log.Fatalf("Database shutdown failure: %v", err)
 		}
 

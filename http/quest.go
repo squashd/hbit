@@ -6,7 +6,7 @@ import (
 	"github.com/SQUASHD/hbit/quest/database"
 )
 
-func (s *Server) handleQuestGetAll(w http.ResponseWriter, r *http.Request, userId string) {
+func (s *ServerMonolith) handleQuestGetAll(w http.ResponseWriter, r *http.Request, userId string) {
 	quests, err := s.questSvc.ListQuests(r.Context(), userId)
 	if err != nil {
 		Error(w, r, err)
@@ -16,7 +16,7 @@ func (s *Server) handleQuestGetAll(w http.ResponseWriter, r *http.Request, userI
 	RespondWithJSON(w, http.StatusOK, quests)
 }
 
-func (s *Server) handleQuestCreate(w http.ResponseWriter, r *http.Request) {
+func (s *ServerMonolith) handleQuestCreate(w http.ResponseWriter, r *http.Request) {
 	var data database.CreateQuestParams
 	if err := Decode(r, &data); err != nil {
 		Error(w, r, err)
@@ -32,7 +32,7 @@ func (s *Server) handleQuestCreate(w http.ResponseWriter, r *http.Request) {
 	RespondWithJSON(w, http.StatusCreated, quest)
 }
 
-func (s *Server) handleQuestUpdate(w http.ResponseWriter, r *http.Request) {
+func (s *ServerMonolith) handleQuestUpdate(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
 	var data database.UpdateQuestParams
@@ -52,7 +52,7 @@ func (s *Server) handleQuestUpdate(w http.ResponseWriter, r *http.Request) {
 	RespondWithJSON(w, http.StatusOK, quest)
 }
 
-func (s *Server) handleQuestDelete(w http.ResponseWriter, r *http.Request) {
+func (s *ServerMonolith) handleQuestDelete(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	if err := s.questSvc.DeleteQuest(r.Context(), id); err != nil {
 		Error(w, r, err)

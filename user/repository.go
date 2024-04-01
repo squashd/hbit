@@ -2,46 +2,38 @@ package user
 
 import (
 	"context"
-	"encoding/json"
+	"database/sql"
 
 	"github.com/SQUASHD/hbit/user/database"
 )
 
-type (
-	Repository interface {
-		CreateSettings(ctx context.Context, data database.CreateUserSettingsParams) (database.UserSetting, error)
-		ReadSettings(ctx context.Context, userId string) (database.UserSetting, error)
-		UpdateSettings(ctx context.Context, data database.UpdateUserSettingsParams) (database.UserSetting, error)
-		DeleteSettings(ctx context.Context, userId string) error
-	}
+type repository struct {
+	queries *database.Queries
+}
 
-	service struct {
-		repo Repository
-	}
-)
-
-func NewService(repo Repository) Service {
-	return &service{
-		repo: repo,
+func NewReposiory(db *sql.DB) Repository {
+	queries := database.New(db)
+	return &repository{
+		queries: queries,
 	}
 }
 
-// GetSettings implements Service.
-func (s *service) GetSettings(ctx context.Context, userId string) (SettingsDTO, error) {
+// CreateSettings implements Repository.
+func (r *repository) CreateSettings(ctx context.Context, data database.CreateUserSettingsParams) (database.UserSetting, error) {
 	panic("unimplemented")
 }
 
-// CreateSettings implements Service.
-func (s *service) CreateSettings(ctx context.Context, data database.CreateUserSettingsParams) (SettingsDTO, error) {
+// ReadSettings implements Repository.
+func (r *repository) ReadSettings(ctx context.Context, userId string) (database.UserSetting, error) {
 	panic("unimplemented")
 }
 
-// UpdateSettings implements Service.
-func (s *service) UpdateSettings(ctx context.Context, form UpdateSettingsForm) (SettingsDTO, error) {
+// UpdateSettings implements Repository.
+func (r *repository) UpdateSettings(ctx context.Context, data database.UpdateUserSettingsParams) (database.UserSetting, error) {
 	panic("unimplemented")
 }
 
-// DeleteSettings implements Service.
-func (s *service) DeleteSettings(msg json.RawMessage) error {
+// DeleteSettings implements Repository.
+func (r *repository) DeleteSettings(ctx context.Context, userId string) error {
 	panic("unimplemented")
 }

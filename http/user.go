@@ -7,7 +7,7 @@ import (
 	"github.com/SQUASHD/hbit/user/database"
 )
 
-func (s *Server) handleSettingsGet(w http.ResponseWriter, r *http.Request, requestedById string) {
+func (s *ServerMonolith) handleSettingsGet(w http.ResponseWriter, r *http.Request, requestedById string) {
 	settings, err := s.userSvc.GetSettings(r.Context(), requestedById)
 	if err != nil {
 		Error(w, r, err)
@@ -17,7 +17,7 @@ func (s *Server) handleSettingsGet(w http.ResponseWriter, r *http.Request, reque
 	RespondWithJSON(w, http.StatusOK, settings)
 }
 
-func (s *Server) handleSettingsUpdate(w http.ResponseWriter, r *http.Request, requestedById string) {
+func (s *ServerMonolith) handleSettingsUpdate(w http.ResponseWriter, r *http.Request, requestedById string) {
 	id := r.PathValue("id")
 	var data database.UpdateUserSettingsParams
 

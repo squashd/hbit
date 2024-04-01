@@ -6,7 +6,7 @@ import (
 	"github.com/SQUASHD/hbit/task"
 )
 
-func (s *Server) handleTaskFindAll(w http.ResponseWriter, r *http.Request, userId string) {
+func (s *ServerMonolith) handleTaskFindAll(w http.ResponseWriter, r *http.Request, userId string) {
 	tasks, err := s.taskSvc.List(r.Context(), userId)
 	if err != nil {
 		Error(w, r, err)
@@ -15,7 +15,7 @@ func (s *Server) handleTaskFindAll(w http.ResponseWriter, r *http.Request, userI
 	RespondWithJSON(w, http.StatusOK, tasks)
 }
 
-func (h *Server) Get(w http.ResponseWriter, r *http.Request, requestedById string) {
+func (h *ServerMonolith) Get(w http.ResponseWriter, r *http.Request, requestedById string) {
 
 	todos, err := h.taskSvc.List(r.Context(), requestedById)
 	if err != nil {
@@ -26,7 +26,7 @@ func (h *Server) Get(w http.ResponseWriter, r *http.Request, requestedById strin
 
 }
 
-func (h *Server) handleTaskCreate(w http.ResponseWriter, r *http.Request, requestedById string) {
+func (h *ServerMonolith) handleTaskCreate(w http.ResponseWriter, r *http.Request, requestedById string) {
 	var data task.CreateTaskData
 
 	if err := Decode(r, &data); err != nil {
@@ -48,7 +48,7 @@ func (h *Server) handleTaskCreate(w http.ResponseWriter, r *http.Request, reques
 	RespondWithJSON(w, http.StatusCreated, todo)
 }
 
-func (h *Server) handleTaskUpdate(w http.ResponseWriter, r *http.Request, requestedById string) {
+func (h *ServerMonolith) handleTaskUpdate(w http.ResponseWriter, r *http.Request, requestedById string) {
 	id := r.PathValue("id")
 	var data task.UpdateTaskData
 
@@ -72,7 +72,7 @@ func (h *Server) handleTaskUpdate(w http.ResponseWriter, r *http.Request, reques
 	RespondWithJSON(w, http.StatusOK, todo)
 }
 
-func (h *Server) handleTaskDelete(w http.ResponseWriter, r *http.Request, requestedById string) {
+func (h *ServerMonolith) handleTaskDelete(w http.ResponseWriter, r *http.Request, requestedById string) {
 	id := r.PathValue("id")
 
 	form := task.DeleteTaskForm{
