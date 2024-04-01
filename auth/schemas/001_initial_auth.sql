@@ -1,0 +1,22 @@
+-- +goose Up
+CREATE TABLE IF NOT EXISTS admin (user_id TEXT PRIMARY KEY NOT NULL);
+
+CREATE TABLE IF NOT EXISTS revoked_token (
+    token TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS auth (
+    user_id TEXT PRIMARY KEY,
+    username TEXT NOT NULL UNIQUE,
+    hashed_password TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- +goose Down
+DROP TABLE IF EXISTS admin;
+
+DROP TABLE IF EXISTS revoked_token;
+
+DROP TABLE IF EXISTS credential;

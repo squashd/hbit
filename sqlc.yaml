@@ -1,0 +1,61 @@
+version: "2"
+sql:
+- schema: "user/schemas"
+  queries: "user/queries"
+  engine: "sqlite"
+  gen:
+    go: 
+      package: "database"
+      out: "user/database"
+      emit_json_tags: true
+      emit_pointers_for_null_types: true
+
+- schema: "auth/schemas"
+  queries: "auth/queries"
+  engine: "sqlite"
+  gen:
+    go: 
+      package: "database"
+      out: "auth/database"
+      emit_json_tags: true
+      emit_pointers_for_null_types: true
+
+- schema: "quest/schemas"
+  queries: "quest/queries"
+  engine: "sqlite"
+  gen:
+    go: 
+      package: "database"
+      out: "quest/database"
+      emit_json_tags: true
+      emit_pointers_for_null_types: true
+
+- schema: "achievement/schemas"
+  queries: "achievement/queries"
+  engine: "sqlite"
+  gen:
+    go: 
+      package: "database"
+      out: "achievement/database"
+      emit_json_tags: true
+      emit_pointers_for_null_types: true
+
+- schema: "character/schemas"
+  queries: "character/queries"
+  engine: "sqlite"
+  gen:
+    go: 
+      package: "database"
+      out: "character/database"
+      emit_json_tags: true
+      emit_pointers_for_null_types: true
+
+- schema: "task/schemas"
+  queries: "task/queries"
+  engine: "sqlite"
+  gen:
+    go: 
+      package: "database"
+      out: "task/database"
+      emit_json_tags: true
+      emit_pointers_for_null_types: true
