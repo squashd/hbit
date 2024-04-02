@@ -7,13 +7,13 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func MakeJWT(userId, tokenSecret, issuer string, durationSeconds int) (string, error) {
+func MakeJWT(userId, tokenSecret, issuer string, duration time.Duration) (string, error) {
 	signingKey := []byte(tokenSecret)
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
 		Issuer:    issuer,
 		IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
-		ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(time.Duration(durationSeconds) * time.Second)),
+		ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(time.Duration(duration) * time.Minute)),
 		Subject:   userId,
 	})
 	return token.SignedString(signingKey)

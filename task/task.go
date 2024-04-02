@@ -2,16 +2,23 @@ package task
 
 import (
 	"context"
+
+	"github.com/SQUASHD/hbit/task/taskdb"
 )
 
 type (
+	Service interface {
+		UserTaskService
+		InternalService
+	}
+
 	CreateTaskForm struct {
-		CreateTaskData
+		taskdb.CreateTaskParams
 		RequestedById string
 	}
 
 	UpdateTaskForm struct {
-		UpdateTaskData
+		taskdb.UpdateTaskParams
 		TaskId        string
 		RequestedById string
 	}
@@ -21,12 +28,15 @@ type (
 		RequestedById string
 	}
 
-	Service interface {
-		List(context context.Context, userId string) ([]DTO, error)
-		Create(context context.Context, form CreateTaskForm) (DTO, error)
-		Update(context context.Context, form UpdateTaskForm) (DTO, error)
-		Delete(context context.Context, form DeleteTaskForm) error
+	UserTaskService interface {
+		List(ctx context.Context, userId string) ([]DTO, error)
+		Create(ctx context.Context, form CreateTaskForm) (DTO, error)
+		Update(ctx context.Context, form UpdateTaskForm) (DTO, error)
+		Delete(ctx context.Context, form DeleteTaskForm) error
+	}
 
+	InternalService interface {
 		DeleteUserTasks(userId string) error
+		Cleanup() error
 	}
 )

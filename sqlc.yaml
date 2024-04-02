@@ -5,8 +5,8 @@ sql:
   engine: "sqlite"
   gen:
     go: 
-      package: "database"
-      out: "user/database"
+      package: "userdb"
+      out: "user/userdb"
       emit_json_tags: true
       emit_pointers_for_null_types: true
 
@@ -15,38 +15,28 @@ sql:
   engine: "sqlite"
   gen:
     go: 
-      package: "database"
-      out: "auth/database"
+      package: "authdb"
+      out: "auth/authdb"
       emit_json_tags: true
       emit_pointers_for_null_types: true
 
-- schema: "quest/schemas"
-  queries: "quest/queries"
+- schema: "rpg/schemas"
+  queries: "rpg/queries"
   engine: "sqlite"
   gen:
     go: 
-      package: "database"
-      out: "quest/database"
+      package: "rpgdb"
+      out: "rpg/rpgdb"
       emit_json_tags: true
       emit_pointers_for_null_types: true
 
-- schema: "achievement/schemas"
-  queries: "achievement/queries"
+- schema: "feat/schemas"
+  queries: "feat/queries"
   engine: "sqlite"
   gen:
     go: 
-      package: "database"
-      out: "achievement/database"
-      emit_json_tags: true
-      emit_pointers_for_null_types: true
-
-- schema: "character/schemas"
-  queries: "character/queries"
-  engine: "sqlite"
-  gen:
-    go: 
-      package: "database"
-      out: "character/database"
+      package: "featdb"
+      out: "feat/featdb"
       emit_json_tags: true
       emit_pointers_for_null_types: true
 
@@ -55,7 +45,7 @@ sql:
   engine: "sqlite"
   gen:
     go: 
-      package: "database"
-      out: "task/database"
+      package: "taskdb"
+      out: "task/taskdb"
       emit_json_tags: true
       emit_pointers_for_null_types: true

@@ -37,7 +37,7 @@ func ClearTokensFromCookie(w http.ResponseWriter) {
 	ClearRefreshCookie(w)
 }
 
-func SetAccessCookie(w http.ResponseWriter, token string, duration int) {
+func SetAccessCookie(w http.ResponseWriter, token string, duration time.Duration) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     ACCESS_TOKEN,
 		Value:    token,
@@ -45,7 +45,7 @@ func SetAccessCookie(w http.ResponseWriter, token string, duration int) {
 		SameSite: http.SameSiteStrictMode,
 		Path:     "/",
 		Secure:   true,
-		Expires:  time.Now().Add(time.Duration(duration) * time.Second),
+		Expires:  time.Now().Add(duration),
 	})
 }
 

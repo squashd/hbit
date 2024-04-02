@@ -6,11 +6,12 @@ import (
 	"errors"
 
 	"github.com/SQUASHD/hbit"
-	"github.com/SQUASHD/hbit/auth/database"
+	"github.com/SQUASHD/hbit/auth/authdb"
 )
 
 type repository struct {
-	queries *database.Queries
+	queries *authdb.Queries
+	db      *sql.DB
 }
 
 // DeleteUser implements Repository.
@@ -19,16 +20,17 @@ func (r *repository) DeleteUser(userId string) error {
 }
 
 func NewRepository(db *sql.DB) Repository {
-	queries := database.New(db)
+	queries := authdb.New(db)
 	return &repository{
 		queries: queries,
+		db:      db,
 	}
 }
-func (r *repository) CreateAuth(ctx context.Context, data database.CreateAuthParams) (database.Auth, error) {
+func (r *repository) CreateAuth(ctx context.Context, data authdb.CreateAuthParams) (authdb.Auth, error) {
 	return r.queries.CreateAuth(ctx, data)
 }
 
-func (r *repository) FindUserByUsername(ctx context.Context, username string) (database.Auth, error) {
+func (r *repository) FindUserByUsername(ctx context.Context, username string) (authdb.Auth, error) {
 	return r.queries.FindUserByUsername(ctx, username)
 }
 
@@ -40,8 +42,15 @@ func (r *repository) FindRevokeToken(ctx context.Context, token string) error {
 	return nil
 }
 
-func (r *repository) RevokeToken(ctx context.Context, params database.CreateRevokedTokenParams) error {
-	return r.queries.CreateRevokedToken(ctx, params)
+func (r *repository) RevokeToken(ctx context.Context, form RevokeTokenForm) error {
+	admin, err := r.queries.IsAdmin(ctx, form.RequesterId)
+	if err != nil {
+		return err
+	}
+	if admin == "" {
+		return &hbit.Error{Code: hbit.EFORBIDDEN, Message: "You are not authorized to perform this action"}
+	}
+	return r.queries.CreateRevokedToken(ctx, form.CreateRevokedTokenParams)
 }
 
 func (r *repository) IsAdmin(ctx context.Context, userId string) (bool, error) {
@@ -53,4 +62,8 @@ func (r *repository) IsAdmin(ctx context.Context, userId string) (bool, error) {
 		return false, &hbit.Error{Code: hbit.EINTERNAL, Message: err.Error()}
 	}
 	return true, nil
+}
+
+func (r *repository) Cleanup() error {
+	return r.db.Close()
 }

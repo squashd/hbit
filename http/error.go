@@ -62,3 +62,5 @@ func Error(w http.ResponseWriter, r *http.Request, err error) {
 type ErrorResponse struct {
 	Error string `json:"error"`
 }
+
+var ErrServerClosed = http.ErrServerClosed

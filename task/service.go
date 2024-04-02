@@ -2,19 +2,26 @@ package task
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/SQUASHD/hbit"
+	"github.com/SQUASHD/hbit/task/taskdb"
 	"github.com/wagslane/go-rabbitmq"
 )
 
 type (
 	Repository interface {
-		List(ctx context.Context, userId string) (Tasks, error)
-		Create(ctx context.Context, data CreateTaskData) (Task, error)
-		Read(ctx context.Context, id string) (Task, error)
-		Update(ctx context.Context, data UpdateTaskData) (Task, error)
-		Delete(ctx context.Context, id string) error
+		TaskCRUD
 		DeleteUserTasks(userId string) error
+		Cleanup() error
+	}
+
+	TaskCRUD interface {
+		List(ctx context.Context, userId string) (Tasks, error)
+		Create(ctx context.Context, data taskdb.CreateTaskParams) (Task, error)
+		Read(ctx context.Context, id string) (Task, error)
+		Update(ctx context.Context, data taskdb.UpdateTaskParams) (Task, error)
+		Delete(ctx context.Context, id string) error
 	}
 
 	service struct {
@@ -24,6 +31,10 @@ type (
 )
 
 func NewService(repo Repository, publisher *rabbitmq.Publisher) Service {
+	if publisher == nil {
+		fmt.Println("publisher is nil")
+	}
+
 	return &service{
 		repo:      repo,
 		publisher: publisher,
@@ -40,9 +51,23 @@ func (s *service) List(ctx context.Context, requestedById string) ([]DTO, error)
 }
 
 func (s *service) Create(ctx context.Context, form CreateTaskForm) (DTO, error) {
-	task, err := s.repo.Create(ctx, form.CreateTaskData)
+	task, err := s.repo.Create(ctx, form.CreateTaskParams)
 	if err != nil {
 		return DTO{}, err
+	}
+
+	if s.publisher == nil {
+		fmt.Println("publisher is nil")
+		return DTO{}, nil
+	}
+
+	if err := s.publisher.Publish(
+		[]byte("test"),
+		[]string{"task.done"},
+		rabbitmq.WithPublishOptionsContentType("application/json"),
+		rabbitmq.WithPublishOptionsExchange("events"),
+	); err != nil {
+		fmt.Println("cannot publish message")
 	}
 
 	dto := toDTO(task)
@@ -50,13 +75,14 @@ func (s *service) Create(ctx context.Context, form CreateTaskForm) (DTO, error) 
 }
 
 func (s *service) Update(ctx context.Context, form UpdateTaskForm) (DTO, error) {
-	if form.UpdateTaskData.ID != form.TaskId {
+	if form.UpdateTaskParams.ID != form.TaskId {
 		return DTO{}, &hbit.Error{Code: hbit.EUNAUTHORIZED, Message: "unauthorized"}
 	}
-	task, err := s.repo.Update(ctx, form.UpdateTaskData)
+	task, err := s.repo.Update(ctx, form.UpdateTaskParams)
 	if err != nil {
 		return DTO{}, err
 	}
+
 	dto := toDTO(task)
 	return dto, nil
 }
@@ -79,4 +105,12 @@ func (s *service) Delete(ctx context.Context, form DeleteTaskForm) error {
 
 func (s *service) DeleteUserTasks(userId string) error {
 	return s.repo.DeleteUserTasks(userId)
+}
+
+func (s *service) Cleanup() error {
+	return s.repo.Cleanup()
+}
+
+func (s *service) DummyPublish() error {
+	return s.publisher.Publish([]byte("dummy"), []string{"task.created"}, nil)
 }

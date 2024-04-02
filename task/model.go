@@ -3,7 +3,7 @@ package task
 import (
 	"time"
 
-	"github.com/SQUASHD/hbit/task/database"
+	"github.com/SQUASHD/hbit/task/taskdb"
 )
 
 const (
@@ -22,7 +22,7 @@ const (
 )
 
 type (
-	Task  = database.Task
+	Task  = taskdb.Task
 	Tasks = []Task
 
 	RepeatType string
@@ -38,9 +38,6 @@ type (
 		CreatedAt time.Time `json:"created_at"`
 		UpdatedAt time.Time `json:"updated_at"`
 	}
-
-	CreateTaskData = database.CreateTaskParams
-	UpdateTaskData = database.UpdateTaskParams
 )
 
 func toDTO(task Task) DTO {

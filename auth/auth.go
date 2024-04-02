@@ -1,6 +1,10 @@
 package auth
 
-import "context"
+import (
+	"context"
+
+	"github.com/SQUASHD/hbit/auth/authdb"
+)
 
 type (
 	Service interface {
@@ -11,5 +15,22 @@ type (
 		RevokeToken(ctx context.Context, form RevokeTokenForm) error
 		IsAdmin(ctx context.Context, userId string) (bool, error)
 		DeleteUser(userId string) error
+		Cleanup() error
+	}
+
+	LoginForm struct {
+		Username string `json:"username" form:"username"`
+		Password string `json:"password" form:"password"`
+	}
+
+	RevokeTokenForm struct {
+		authdb.CreateRevokedTokenParams
+		RequesterId string `json:"requester_id"`
+	}
+
+	CreateUserForm struct {
+		Username        string `json:"username"`
+		Password        string `json:"password"`
+		ConfirmPassword string `json:"confirmPassword"`
 	}
 )

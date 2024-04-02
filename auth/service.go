@@ -4,23 +4,24 @@ import (
 	"context"
 
 	"github.com/SQUASHD/hbit"
-	"github.com/SQUASHD/hbit/auth/database"
+	"github.com/SQUASHD/hbit/auth/authdb"
 	"github.com/SQUASHD/hbit/config"
 	"github.com/wagslane/go-rabbitmq"
 )
 
 type (
 	Repository interface {
-		FindUserByUsername(ctx context.Context, username string) (database.Auth, error)
-		CreateAuth(ctx context.Context, data database.CreateAuthParams) (database.Auth, error)
+		FindUserByUsername(ctx context.Context, username string) (authdb.Auth, error)
+		CreateAuth(ctx context.Context, data authdb.CreateAuthParams) (authdb.Auth, error)
 		FindRevokeToken(ctx context.Context, token string) error
 		DeleteUser(userId string) error
-		RevokeToken(ctx context.Context, form RevokeTokenParams) error
+		RevokeToken(ctx context.Context, form RevokeTokenForm) error
 		IsAdmin(ctx context.Context, userId string) (bool, error)
+		Cleanup() error
 	}
 
 	service struct {
-		jwtConfig config.JwtConfig
+		jwtConfig config.JwtOptions
 		repo      Repository
 		publisher *rabbitmq.Publisher
 	}
@@ -28,7 +29,7 @@ type (
 
 func NewService(
 	repo Repository,
-	jwtConfig config.JwtConfig,
+	jwtConfig config.JwtOptions,
 	publisher *rabbitmq.Publisher,
 ) Service {
 	return &service{
@@ -103,8 +104,8 @@ func validatePassword(password, confirmPassword string) []*hbit.Error {
 	return errs
 }
 
-func convertUserFormToModel(form CreateUserForm, password string) database.CreateAuthParams {
-	return database.CreateAuthParams{
+func convertUserFormToModel(form CreateUserForm, password string) authdb.CreateAuthParams {
+	return authdb.CreateAuthParams{
 		Username:       form.Username,
 		HashedPassword: password,
 	}
@@ -205,4 +206,8 @@ func (s *service) DeleteUser(userId string) error {
 		return err
 	}
 	return nil
+}
+
+func (s *service) Cleanup() error {
+	return s.repo.Cleanup()
 }

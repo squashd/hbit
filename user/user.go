@@ -5,10 +5,18 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/SQUASHD/hbit/user/database"
+	"github.com/SQUASHD/hbit/user/userdb"
 )
 
 type (
+	Service interface {
+		GetSettings(ctx context.Context, userId string) (SettingsDTO, error)
+		UpdateSettings(ctx context.Context, form UpdateSettingsForm) (SettingsDTO, error)
+		CreateSettings(ctx context.Context, data userdb.CreateUserSettingsParams) (SettingsDTO, error)
+		DeleteSettings(msg json.RawMessage) error
+		Cleanup() error
+	}
+
 	SettingsDTO struct {
 		UserID             string    `json:"user_id"`
 		Theme              string    `json:"theme"`
@@ -20,24 +28,13 @@ type (
 	}
 
 	UpdateSettingsForm struct {
-		database.UpdateUserSettingsParams
+		userdb.UpdateUserSettingsParams
 		UserId        string
 		RequestedById string
 	}
-
-	SettingsService interface {
-		GetSettings(ctx context.Context, userId string) (SettingsDTO, error)
-		UpdateSettings(ctx context.Context, form UpdateSettingsForm) (SettingsDTO, error)
-		CreateSettings(ctx context.Context, data database.CreateUserSettingsParams) (SettingsDTO, error)
-		DeleteSettings(msg json.RawMessage) error
-	}
-
-	Service interface {
-		SettingsService
-	}
 )
 
-func toSettingsDTO(s database.UserSetting) SettingsDTO {
+func toSettingsDTO(s userdb.UserSetting) SettingsDTO {
 	return SettingsDTO{
 		UserID:             s.UserID,
 		Theme:              s.Theme,

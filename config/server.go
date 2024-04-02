@@ -1,75 +1,124 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"time"
-
-	"github.com/SQUASHD/hbit"
 )
 
-type ServerConfig struct {
-	Port         int           `env:"SERVER_PORT,required"`
-	TimeoutRead  time.Duration `env:"SERVER_TIMEOUT_READ,required"`
-	TimeoutWrite time.Duration `env:"SERVER_TIMEOUT_WRITE,required"`
-	TimeoutIdle  time.Duration `env:"SERVER_TIMEOUT_IDLE,required"`
-	Debug        bool          `env:"SERVER_DEBUG,required"`
+type ServerOptions struct {
+	Port         int
+	TimeoutRead  time.Duration
+	TimeoutWrite time.Duration
+	TimeoutIdle  time.Duration
+	Debug        bool
 }
 
-func NewServerConfigFromEnv() (ServerConfig, error) {
-	var c ServerConfig
+func NewServer(options ...func(*ServerOptions) error) (*ServerOptions, error) {
+	opts := getDefaultServerOptions()
+	for _, option := range options {
+		if err := option(&opts); err != nil {
+			return nil, err
+		}
+	}
+	return &opts, nil
+}
 
-	portStr := os.Getenv("SERVER_PORT")
-	if portStr == "" {
-		return ServerConfig{}, &hbit.Error{Code: hbit.EINTERNAL, Message: "SERVER_PORT is not set"}
+func getDefaultServerOptions() ServerOptions {
+	return ServerOptions{
+		Port:         8080,
+		TimeoutRead:  5 * time.Second,
+		TimeoutWrite: 10 * time.Second,
+		TimeoutIdle:  15 * time.Second,
+		Debug:        false,
 	}
-	port, err := strconv.Atoi(portStr)
-	if err != nil {
-		return ServerConfig{}, &hbit.Error{Code: hbit.EINTERNAL, Message: "SERVER_PORT is not set"}
-	}
+}
 
-	timeoutRead := os.Getenv("SERVER_TIMEOUT_READ")
-	if timeoutRead == "" {
-		return ServerConfig{}, &hbit.Error{Code: hbit.EINTERNAL, Message: "SERVER_TIMEOUT_READ is not set"}
+func WithServerOptionsPort(port int) func(*ServerOptions) error {
+	return func(options *ServerOptions) error {
+		options.Port = port
+		return nil
 	}
-	tr, err := time.ParseDuration(timeoutRead)
-	if err != nil {
-		return ServerConfig{}, &hbit.Error{Code: hbit.EINTERNAL, Message: "SERVER_TIMEOUT_READ is not a valid duration"}
-	}
+}
 
-	timeoutWrite := os.Getenv("SERVER_TIMEOUT_WRITE")
-	if timeoutWrite == "" {
-		return ServerConfig{}, &hbit.Error{Code: hbit.EINTERNAL, Message: "SERVER_TIMEOUT_WRITE is not set"}
+func WithServerOptionsPortFromEnv(key string) func(*ServerOptions) error {
+	return func(options *ServerOptions) error {
+		if portStr, ok := os.LookupEnv(key); ok {
+			port, err := strconv.Atoi(portStr)
+			if err != nil {
+				return fmt.Errorf("invalid port value: %v", err)
+			}
+			options.Port = port
+		} else {
+			return fmt.Errorf("missing port value")
+		}
+		return nil
 	}
-	tw, err := time.ParseDuration(timeoutWrite)
-	if err != nil {
-		return ServerConfig{}, &hbit.Error{Code: hbit.EINTERNAL, Message: "SERVER_TIMEOUT_WRITE is not a valid duration"}
-	}
+}
 
-	timeoutIdle := os.Getenv("SERVER_TIMEOUT_IDLE")
-	if timeoutIdle == "" {
-		return ServerConfig{}, &hbit.Error{Code: hbit.EINTERNAL, Message: "SERVER_TIMEOUT_IDLE is not set"}
+func WithServerOptionsTimeoutRead(timeout time.Duration) func(*ServerOptions) error {
+	return func(options *ServerOptions) error {
+		options.TimeoutRead = timeout
+		return nil
 	}
-	ti, err := time.ParseDuration(timeoutIdle)
-	if err != nil {
-		return ServerConfig{}, &hbit.Error{Code: hbit.EINTERNAL, Message: "SERVER_TIMEOUT_IDLE is not a valid duration"}
+}
 
+func WithServerOptionsTimeoutReadFromEnv(key string) func(*ServerOptions) error {
+	return func(options *ServerOptions) error {
+		if timeoutStr, ok := os.LookupEnv(key); ok {
+			timeout, err := time.ParseDuration(timeoutStr)
+			if err != nil {
+				return fmt.Errorf("invalid timeout value: %v", err)
+			}
+			options.TimeoutRead = timeout
+		} else {
+			return fmt.Errorf("missing timeout value")
+		}
+		return nil
 	}
+}
 
-	debugStr := os.Getenv("SERVER_DEBUG")
-	if debugStr == "" {
-		return ServerConfig{}, &hbit.Error{Code: hbit.EINTERNAL, Message: "SERVER_DEBUG is not set"}
+func WithServerOptionsTimeoutWrite(timeout time.Duration) func(*ServerOptions) error {
+	return func(options *ServerOptions) error {
+		options.TimeoutWrite = timeout
+		return nil
 	}
-	debug, err := strconv.ParseBool(debugStr)
-	if err != nil {
-		return ServerConfig{}, &hbit.Error{Code: hbit.EINTERNAL, Message: "SERVER_DEBUG is not a valid boolean"}
+}
+
+func WithServerOptionsTimeoutWriteFromEnv(key string) func(*ServerOptions) error {
+	return func(options *ServerOptions) error {
+		if timeoutStr, ok := os.LookupEnv(key); ok {
+			timeout, err := time.ParseDuration(timeoutStr)
+			if err != nil {
+				return fmt.Errorf("invalid timeout value: %v", err)
+			}
+			options.TimeoutWrite = timeout
+		} else {
+			return fmt.Errorf("missing timeout value")
+		}
+		return nil
 	}
+}
 
-	c.Port = port
-	c.TimeoutRead = tr
-	c.TimeoutWrite = tw
-	c.TimeoutIdle = ti
-	c.Debug = debug
+func WithServerOptionsTimeoutIdle(timeout time.Duration) func(*ServerOptions) error {
+	return func(options *ServerOptions) error {
+		options.TimeoutIdle = timeout
+		return nil
+	}
+}
 
-	return c, nil
+func WithServerOptionsTimeoutIdleFromEnv(key string) func(*ServerOptions) error {
+	return func(options *ServerOptions) error {
+		if timeoutStr, ok := os.LookupEnv(key); ok {
+			timeout, err := time.ParseDuration(timeoutStr)
+			if err != nil {
+				return fmt.Errorf("invalid timeout value: %v", err)
+			}
+			options.TimeoutIdle = timeout
+		} else {
+			return fmt.Errorf("missing timeout value")
+		}
+		return nil
+	}
 }

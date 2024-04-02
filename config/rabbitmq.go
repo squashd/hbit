@@ -1,13 +1,13 @@
 package config
 
-type RabbitmqConfig struct {
+type RabbitMQ struct {
 	Username string
 	Password string
 	Host     string
 	Port     string
 }
 
-func NewRabbitConnectionString(config RabbitmqConfig) string {
+func NewRabbitConnectionString(config RabbitMQ) string {
 	if config.Username == "" {
 		config.Username = "guest"
 	}
