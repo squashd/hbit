@@ -1,6 +1,7 @@
 package http
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/SQUASHD/hbit/user"
@@ -28,7 +29,8 @@ func (h *userHandler) SettingsGet(w http.ResponseWriter, r *http.Request, reques
 func (h *userHandler) SettingsUpdate(w http.ResponseWriter, r *http.Request, requestedById string) {
 	var data userdb.UpdateUserSettingsParams
 
-	if err := Decode(r, &data); err != nil {
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&data); err != nil {
 		Error(w, r, err)
 		return
 	}

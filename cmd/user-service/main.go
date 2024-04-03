@@ -31,7 +31,7 @@ func main() {
 	)
 	server, err := http.NewServer(
 		wrappedRouter,
-		http.WithServerOptionsPort(80),
+		http.WithServerOptionsPortFromEnv("USER_SVC_PORT"),
 	)
 	if err != nil {
 		log.Fatalf("failed to create server: %v", err)

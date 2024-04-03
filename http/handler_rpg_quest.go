@@ -1,6 +1,7 @@
 package http
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/SQUASHD/hbit/rpg/quest"
@@ -27,7 +28,9 @@ func (h *questHandler) GetAll(w http.ResponseWriter, r *http.Request, userId str
 
 func (h *questHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var data rpgdb.CreateQuestParams
-	if err := Decode(r, &data); err != nil {
+
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&data); err != nil {
 		Error(w, r, err)
 		return
 	}
@@ -45,7 +48,8 @@ func (h *questHandler) Update(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
 	var data rpgdb.UpdateQuestParams
-	if err := Decode(r, &data); err != nil {
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&data); err != nil {
 		Error(w, r, err)
 		return
 	}

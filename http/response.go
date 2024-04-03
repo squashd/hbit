@@ -12,7 +12,3 @@ func RespondWithJSON(w http.ResponseWriter, code int, payload any) {
 	w.WriteHeader(code)
 	w.Write(response)
 }
-
-func Decode(r *http.Request, v any) error {
-	return json.NewDecoder(r.Body).Decode(v)
-}

@@ -30,7 +30,7 @@ func main() {
 
 	server, err := http.NewServer(
 		router,
-		http.WithServerOptionsPort(80),
+		http.WithServerOptionsPortFromEnv("UPDATES_SVC_PORT"),
 	)
 	if err != nil {
 		log.Fatalf("cannot create server: %s", err)

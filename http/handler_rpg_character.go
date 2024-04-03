@@ -1,6 +1,7 @@
 package http
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/SQUASHD/hbit/rpg/character"
@@ -44,7 +45,8 @@ func (h *characterHandler) CharacterGet(w http.ResponseWriter, r *http.Request, 
 func (h *characterHandler) CharacterCreate(w http.ResponseWriter, r *http.Request, requestedById string) {
 	var data rpgdb.CreateCharacterParams
 
-	if err := Decode(r, &data); err != nil {
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&data); err != nil {
 		Error(w, r, err)
 		return
 	}
@@ -67,7 +69,8 @@ func (h *characterHandler) CharacterUpdate(w http.ResponseWriter, r *http.Reques
 	id := r.PathValue("id")
 
 	var data rpgdb.UpdateCharacterParams
-	if err := Decode(r, &data); err != nil {
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&data); err != nil {
 		Error(w, r, err)
 		return
 	}

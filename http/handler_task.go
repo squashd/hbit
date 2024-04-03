@@ -1,6 +1,7 @@
 package http
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/SQUASHD/hbit/task"
@@ -37,7 +38,8 @@ func (h *taskHandler) Get(w http.ResponseWriter, r *http.Request, requestedById 
 func (h *taskHandler) Create(w http.ResponseWriter, r *http.Request, requestedById string) {
 	var data taskdb.CreateTaskParams
 
-	if err := Decode(r, &data); err != nil {
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&data); err != nil {
 		Error(w, r, err)
 		return
 	}
@@ -60,7 +62,8 @@ func (h *taskHandler) Update(w http.ResponseWriter, r *http.Request, requestedBy
 	id := r.PathValue("id")
 	var data taskdb.UpdateTaskParams
 
-	if err := Decode(r, &data); err != nil {
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&data); err != nil {
 		Error(w, r, err)
 		return
 	}
