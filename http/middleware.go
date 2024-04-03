@@ -46,6 +46,7 @@ func AuthMiddleware(next AuthedHandler) http.HandlerFunc {
 		next(w, r, userId)
 	})
 }
+
 func getUserIdFromHeader(r *http.Request) string {
 	return r.Header.Get("X-User-Id")
 }

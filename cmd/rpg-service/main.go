@@ -9,7 +9,6 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/SQUASHD/hbit/config"
 	"github.com/SQUASHD/hbit/events"
 	"github.com/SQUASHD/hbit/http"
 	"github.com/SQUASHD/hbit/rpg"
@@ -30,7 +29,8 @@ func main() {
 	questSvc := quest.NewService(db, queries)
 	characterSvc := character.NewService(db, queries)
 
-	publisher, conn, err := events.NewPublisher(config.RabbitMQ{})
+	rabbitmqUrl := os.Getenv("RABBITMQ_URL")
+	publisher, conn, err := events.NewPublisher(rabbitmqUrl)
 	if err != nil {
 		log.Fatalf("cannot create rpg publisher: %s", err)
 	}
@@ -38,7 +38,7 @@ func main() {
 
 	rpgSvc := rpg.NewService(characterSvc, questSvc, publisher)
 
-	consumer, conn, err := events.NewRPGEventConsumer(config.RabbitMQ{})
+	consumer, conn, err := events.NewRPGEventConsumer(rabbitmqUrl)
 	if err != nil {
 		log.Fatalf("cannot create rpg consumer: %s", err)
 	}
@@ -46,9 +46,14 @@ func main() {
 	eventHandler := events.NewRPGConsumerHandler(rpgSvc)
 
 	rpgRouter := http.NewRPGRouter(characterSvc, questSvc)
-	server, err := http.NewServer(
+	wrappedRouter := http.ChainMiddleware(
 		rpgRouter,
-		http.WithServerOptionsPort(8080),
+		http.CORSMiddleware,
+		http.LoggerMiddleware,
+	)
+	server, err := http.NewServer(
+		wrappedRouter,
+		http.WithServerOptionsPort(80),
 	)
 	if err != nil {
 		log.Fatalf("cannot create server: %s", err)

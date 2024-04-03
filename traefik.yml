@@ -1,7 +1,0 @@
-http:
-  middlewares:
-    auth-forward:
-      forwardAuth:
-        address: "http://auth-service:80/auth/verify"
-        trustForwardHeader: true
-        authResponseHeaders: ["X-User-ID"]

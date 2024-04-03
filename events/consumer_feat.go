@@ -5,14 +5,12 @@ import (
 	"fmt"
 
 	"github.com/SQUASHD/hbit"
-	"github.com/SQUASHD/hbit/config"
 	"github.com/SQUASHD/hbit/feat"
 	"github.com/wagslane/go-rabbitmq"
 )
 
-func NewFeatEventConsumer(rabbitmqConf config.RabbitMQ) (*rabbitmq.Consumer, *rabbitmq.Conn, error) {
-	connStr := config.NewRabbitConnectionString(rabbitmqConf)
-	conn, err := rabbitmq.NewConn(connStr)
+func NewFeatEventConsumer(url string) (*rabbitmq.Consumer, *rabbitmq.Conn, error) {
+	conn, err := rabbitmq.NewConn(url)
 	if err != nil {
 		return nil, nil, err
 	}

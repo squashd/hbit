@@ -1,7 +1,14 @@
-FROM --platform=linux/amd64 debian:stable-slim
+FROM debian:stable-slim
 
-RUN apt-get update && apt-get install -y ca-certificates
+RUN apt-get update && \
+    apt-get install -y ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
 
-ADD notely /usr/bin/notely
+WORKDIR /app
 
-CMD ["notely"]
+COPY ./bin/userSvc /app/userSvc
+
+RUN chmod +x /app/userSvc
+
+CMD ["./userSvc"]
+

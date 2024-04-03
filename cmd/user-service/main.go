@@ -24,7 +24,15 @@ func main() {
 	userSvc := user.NewService(db, quries)
 
 	userRouter := http.NewUserRouter(userSvc)
-	server, err := http.NewServer(userRouter)
+	wrappedRouter := http.ChainMiddleware(
+		userRouter,
+		http.CORSMiddleware,
+		http.LoggerMiddleware,
+	)
+	server, err := http.NewServer(
+		wrappedRouter,
+		http.WithServerOptionsPort(80),
+	)
 	if err != nil {
 		log.Fatalf("failed to create server: %v", err)
 	}

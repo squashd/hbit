@@ -8,7 +8,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/SQUASHD/hbit/config"
 	"github.com/SQUASHD/hbit/events"
 	"github.com/SQUASHD/hbit/http"
 	"github.com/SQUASHD/hbit/task"
@@ -17,7 +16,8 @@ import (
 )
 
 func main() {
-	publisher, conn, err := events.NewPublisher(config.RabbitMQ{})
+	rabbitmqUrl := os.Getenv("RABBITMQ_URL")
+	publisher, conn, err := events.NewPublisher(rabbitmqUrl)
 	if err != nil {
 		log.Fatalf("cannot create task publisher: %s", err)
 	}
@@ -32,9 +32,15 @@ func main() {
 	taskSvc := task.NewService(db, queries, publisher)
 
 	taskRouter := http.NewTaskRouter(taskSvc)
-	server, err := http.NewServer(
+
+	wrappedRouter := http.ChainMiddleware(
 		taskRouter,
-		http.WithServerOptionsPort(9001),
+		http.CORSMiddleware,
+		http.LoggerMiddleware,
+	)
+	server, err := http.NewServer(
+		wrappedRouter,
+		http.WithServerOptionsPort(80),
 	)
 	if err != nil {
 		log.Fatalf("failed to create server: %v", err)

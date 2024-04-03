@@ -9,7 +9,6 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/SQUASHD/hbit/config"
 	"github.com/SQUASHD/hbit/events"
 	"github.com/SQUASHD/hbit/feat"
 	"github.com/SQUASHD/hbit/feat/featdb"
@@ -23,7 +22,8 @@ func main() {
 		log.Fatalf("failed to connect to feat database: %v", err)
 	}
 
-	publisher, conn, err := events.NewPublisher(config.RabbitMQ{})
+	rabbitmqUrl := os.Getenv("RABBITMQ_URL")
+	publisher, conn, err := events.NewPublisher(rabbitmqUrl)
 	if err != nil {
 		log.Fatalf("cannot create publisher: %s", err)
 	}
@@ -32,7 +32,7 @@ func main() {
 	queries := featdb.New(db)
 	featSvc := feat.NewService(db, queries, publisher)
 
-	consumer, conn, err := events.NewFeatEventConsumer(config.RabbitMQ{})
+	consumer, conn, err := events.NewFeatEventConsumer(rabbitmqUrl)
 	if err != nil {
 		log.Fatalf("cannot create feat consumer: %s", err)
 	}
@@ -40,9 +40,14 @@ func main() {
 	eventHandler := events.NewFeatEventHandler(featSvc)
 
 	featRouter := http.NewFeatRouter(featSvc)
-	server, err := http.NewServer(
+	wrappedRouter := http.ChainMiddleware(
 		featRouter,
-		http.WithServerOptionsPort(8001),
+		http.CORSMiddleware,
+		http.LoggerMiddleware,
+	)
+	server, err := http.NewServer(
+		wrappedRouter,
+		http.WithServerOptionsPort(80),
 	)
 	if err != nil {
 		log.Fatalf("cannot create server: %s", err)

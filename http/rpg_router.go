@@ -18,5 +18,9 @@ func NewRPGRouter(charSvc character.CharacterService, questSvc quest.QuestServic
 
 	questHandler := newQuestHandler(questSvc)
 	router.HandleFunc("GET /quests", AuthMiddleware(questHandler.GetAll))
-	return router
+
+	rpgRouter := http.NewServeMux()
+	rpgRouter.Handle("/rpg/", http.StripPrefix("/rpg", router))
+
+	return rpgRouter
 }

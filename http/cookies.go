@@ -49,7 +49,7 @@ func SetAccessCookie(w http.ResponseWriter, token string, duration time.Duration
 	})
 }
 
-func SetRefreshCookie(w http.ResponseWriter, token string, duration int) {
+func SetRefreshCookie(w http.ResponseWriter, token string, duration time.Duration) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     REFRESH_TOKEN,
 		Value:    token,
@@ -57,7 +57,7 @@ func SetRefreshCookie(w http.ResponseWriter, token string, duration int) {
 		SameSite: http.SameSiteStrictMode,
 		Secure:   true,
 		Path:     "/",
-		Expires:  time.Now().Add(time.Duration(duration) * time.Second),
+		Expires:  time.Now().Add(time.Duration(duration)),
 	})
 }
 

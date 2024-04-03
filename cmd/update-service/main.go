@@ -6,58 +6,42 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 
-	"github.com/SQUASHD/hbit/auth"
-	"github.com/SQUASHD/hbit/auth/authdb"
-	"github.com/SQUASHD/hbit/config"
 	"github.com/SQUASHD/hbit/events"
 	"github.com/SQUASHD/hbit/http"
+	"github.com/SQUASHD/hbit/updates"
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
 )
 
 func main() {
-	jwtConf := config.NewJwtConfig(
-		config.WithJwtOptionsSecretFromEnv("JWT_SECRET"),
-	)
-
 	rabbitmqUrl := os.Getenv("RABBITMQ_URL")
-	fmt.Printf("rabbitmqUrl: %s\n", rabbitmqUrl)
-	publisher, conn, err := events.NewPublisher(rabbitmqUrl)
+	consumer, conn, err := events.NewUpdateEventConsumer(rabbitmqUrl)
 	if err != nil {
-		log.Fatalf("cannot create auth publisher: %s", err)
+		log.Fatalf("cannot create feat consumer: %s", err)
 	}
 	defer conn.Close()
+	eventHandler := events.NewUpdateConsumerHandler()
 
-	db, err := auth.NewDatabase()
-	if err != nil {
-		log.Fatalf("failed to connect to auth database: %v", err)
-	}
+	svc := updates.NewService()
 
-	queries := authdb.New(db)
-
-	authSvc := auth.NewService(publisher, jwtConf, db, queries)
-
-	authRouter := http.NewAuthRouter(authSvc, jwtConf)
-	wrappedRouter := http.ChainMiddleware(
-		authRouter,
-		http.CORSMiddleware,
-		http.LoggerMiddleware,
-	)
+	router := http.NewUpdatesRouter(svc)
 
 	server, err := http.NewServer(
-		wrappedRouter,
+		router,
 		http.WithServerOptionsPort(80),
 	)
 	if err != nil {
 		log.Fatalf("cannot create server: %s", err)
 	}
 	closed := make(chan struct{})
-
 	go func() {
 		sigint := make(chan os.Signal, 1)
 		signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
 		<-sigint
+
+		consumer.Close()
 
 		fmt.Println("\nShutting down server...")
 
@@ -70,8 +54,24 @@ func main() {
 
 		close(closed)
 	}()
+	fmt.Println("Starting update consumer")
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+		if err := consumer.Run(
+			eventHandler.HandleEvents,
+		); err != nil {
+			log.Fatalf("cannot start consuming: %s", err)
+		}
+	}()
 	fmt.Printf("Server is running on port %s\n", server.Addr)
-	if err = server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("cannot start server: %s", err)
 	}
+	wg.Wait()
+
+	<-closed
+	log.Println("Server closed")
 }

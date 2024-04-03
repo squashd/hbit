@@ -1,13 +1,11 @@
 package events
 
 import (
-	"github.com/SQUASHD/hbit/config"
 	"github.com/wagslane/go-rabbitmq"
 )
 
-func NewPublisher(rabbitmqConf config.RabbitMQ) (*rabbitmq.Publisher, *rabbitmq.Conn, error) {
-	connStr := config.NewRabbitConnectionString(rabbitmqConf)
-	conn, err := rabbitmq.NewConn(connStr)
+func NewPublisher(url string) (*rabbitmq.Publisher, *rabbitmq.Conn, error) {
+	conn, err := rabbitmq.NewConn(url)
 	if err != nil {
 		return nil, nil, err
 	}

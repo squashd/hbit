@@ -6,8 +6,9 @@ RUN apt-get update && \
 
 WORKDIR /app
 
-COPY ./bin/authSvc /app/authSvc
+COPY ./bin/taskSvc /app/taskSvc
 
-RUN chmod +x /app/authSvc
+RUN chmod +x /app/taskSvc
 
-CMD ["./authSvc"]
+CMD ["./taskSvc"]
+

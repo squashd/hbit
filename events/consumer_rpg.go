@@ -4,14 +4,12 @@ import (
 	"encoding/json"
 
 	"github.com/SQUASHD/hbit"
-	"github.com/SQUASHD/hbit/config"
 	"github.com/SQUASHD/hbit/rpg"
 	"github.com/wagslane/go-rabbitmq"
 )
 
-func NewRPGEventConsumer(rabbitmqConf config.RabbitMQ) (*rabbitmq.Consumer, *rabbitmq.Conn, error) {
-	connStr := config.NewRabbitConnectionString(rabbitmqConf)
-	conn, err := rabbitmq.NewConn(connStr)
+func NewRPGEventConsumer(url string) (*rabbitmq.Consumer, *rabbitmq.Conn, error) {
+	conn, err := rabbitmq.NewConn(url)
 	if err != nil {
 		return nil, nil, err
 	}

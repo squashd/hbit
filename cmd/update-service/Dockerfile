@@ -6,8 +6,9 @@ RUN apt-get update && \
 
 WORKDIR /app
 
-COPY ./bin/authSvc /app/authSvc
+COPY ./bin/updateSvc /app/updateSvc
 
-RUN chmod +x /app/authSvc
+RUN chmod +x /app/updateSvc
 
-CMD ["./authSvc"]
+CMD ["./updateSvc"]
+
