@@ -8,25 +8,28 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/SQUASHD/hbit/config"
 	"github.com/SQUASHD/hbit/events"
 	"github.com/SQUASHD/hbit/http"
 	"github.com/SQUASHD/hbit/task"
+	"github.com/SQUASHD/hbit/task/taskdb"
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
 )
 
 func main() {
-	publisher, conn, err := events.NewTaskPublisher()
+	publisher, conn, err := events.NewPublisher(config.RabbitMQ{})
 	if err != nil {
 		log.Fatalf("cannot create task publisher: %s", err)
 	}
 	defer conn.Close()
 
-	taskDb, err := task.NewDatabase()
+	db, err := task.NewDatabase()
 	if err != nil {
 		log.Fatalf("failed to connect to task database: %v", err)
 	}
-	taskRepo := task.NewRepository(taskDb)
-	taskSvc := task.NewService(taskRepo, publisher)
+
+	queries := taskdb.New(db)
+	taskSvc := task.NewService(db, queries, publisher)
 
 	taskRouter := http.NewTaskRouter(taskSvc)
 	server, err := http.NewServer(

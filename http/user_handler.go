@@ -26,7 +26,6 @@ func (h *userHandler) SettingsGet(w http.ResponseWriter, r *http.Request, reques
 }
 
 func (h *userHandler) SettingsUpdate(w http.ResponseWriter, r *http.Request, requestedById string) {
-	id := r.PathValue("id")
 	var data userdb.UpdateUserSettingsParams
 
 	if err := Decode(r, &data); err != nil {
@@ -36,7 +35,6 @@ func (h *userHandler) SettingsUpdate(w http.ResponseWriter, r *http.Request, req
 
 	form := user.UpdateSettingsForm{
 		UpdateUserSettingsParams: data,
-		UserId:                   id,
 		RequestedById:            requestedById,
 	}
 

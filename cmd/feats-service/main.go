@@ -12,17 +12,26 @@ import (
 	"github.com/SQUASHD/hbit/config"
 	"github.com/SQUASHD/hbit/events"
 	"github.com/SQUASHD/hbit/feat"
+	"github.com/SQUASHD/hbit/feat/featdb"
 	"github.com/SQUASHD/hbit/http"
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
 )
 
 func main() {
-	featDb, err := feat.NewDatabase()
+	db, err := feat.NewDatabase()
 	if err != nil {
 		log.Fatalf("failed to connect to feat database: %v", err)
 	}
-	featRepo := feat.NewRepository(featDb)
-	featSvc := feat.NewService(featRepo)
+
+	publisher, conn, err := events.NewPublisher(config.RabbitMQ{})
+	if err != nil {
+		log.Fatalf("cannot create publisher: %s", err)
+	}
+	defer conn.Close()
+
+	queries := featdb.New(db)
+	featSvc := feat.NewService(db, queries, publisher)
+
 	consumer, conn, err := events.NewFeatEventConsumer(config.RabbitMQ{})
 	if err != nil {
 		log.Fatalf("cannot create feat consumer: %s", err)

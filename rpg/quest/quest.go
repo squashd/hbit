@@ -7,7 +7,7 @@ import (
 )
 
 type (
-	Service interface {
+	QuestService interface {
 		UserQuestService
 		EventQuestService
 		InternalQuestService
@@ -26,7 +26,7 @@ type (
 		UpdateQuest(ctx context.Context, data rpgdb.UpdateQuestParams) (QuestDTO, error)
 		CreateQuest(ctx context.Context, data rpgdb.CreateQuestParams) (QuestDTO, error)
 		DeleteQuest(ctx context.Context, id string) error
-		Cleanup() error
+		CleanUp() error
 	}
 
 	QuestDTO struct {

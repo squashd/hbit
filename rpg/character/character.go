@@ -7,10 +7,10 @@ import (
 )
 
 type (
-	Service interface {
+	CharacterService interface {
 		List(ctx context.Context) ([]DTO, error)
 		UserCharacterService
-		Cleanup() error
+		CleanUp() error
 	}
 
 	UserCharacterService interface {

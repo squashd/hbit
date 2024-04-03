@@ -2,7 +2,6 @@ package user
 
 import (
 	"context"
-	"encoding/json"
 	"time"
 
 	"github.com/SQUASHD/hbit/user/userdb"
@@ -13,7 +12,7 @@ type (
 		GetSettings(ctx context.Context, userId string) (SettingsDTO, error)
 		UpdateSettings(ctx context.Context, form UpdateSettingsForm) (SettingsDTO, error)
 		CreateSettings(ctx context.Context, data userdb.CreateUserSettingsParams) (SettingsDTO, error)
-		DeleteSettings(msg json.RawMessage) error
+		DeleteSettings(userId string) error
 		Cleanup() error
 	}
 
@@ -29,7 +28,6 @@ type (
 
 	UpdateSettingsForm struct {
 		userdb.UpdateUserSettingsParams
-		UserId        string
 		RequestedById string
 	}
 )

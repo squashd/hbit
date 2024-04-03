@@ -15,20 +15,22 @@ import (
 	"github.com/SQUASHD/hbit/rpg"
 	"github.com/SQUASHD/hbit/rpg/character"
 	"github.com/SQUASHD/hbit/rpg/quest"
+	"github.com/SQUASHD/hbit/rpg/rpgdb"
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
 )
 
 func main() {
-	rpgDb, err := rpg.NewDatabase()
+	db, err := rpg.NewDatabase()
 	if err != nil {
 		log.Fatalf("failed to connect to rpg database: %v", err)
 	}
-	characterRepo := character.NewRepository(rpgDb)
-	questRepo := quest.NewRepository(rpgDb)
-	questSvc := quest.NewService(questRepo)
-	characterSvc := character.NewService(characterRepo)
 
-	publisher, conn, err := events.NewPublisher()
+	queries := rpgdb.New(db)
+
+	questSvc := quest.NewService(db, queries)
+	characterSvc := character.NewService(db, queries)
+
+	publisher, conn, err := events.NewPublisher(config.RabbitMQ{})
 	if err != nil {
 		log.Fatalf("cannot create rpg publisher: %s", err)
 	}

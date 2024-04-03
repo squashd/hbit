@@ -10,16 +10,18 @@ import (
 
 	"github.com/SQUASHD/hbit/http"
 	"github.com/SQUASHD/hbit/user"
+	"github.com/SQUASHD/hbit/user/userdb"
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
 )
 
 func main() {
-	userDb, err := user.NewDatabase()
+	db, err := user.NewDatabase()
 	if err != nil {
 		log.Fatalf("failed to connect to user database: %v", err)
 	}
-	userRepo := user.NewReposiory(userDb)
-	userSvc := user.NewService(userRepo)
+
+	quries := userdb.New(db)
+	userSvc := user.NewService(db, quries)
 
 	userRouter := http.NewUserRouter(userSvc)
 	server, err := http.NewServer(userRouter)

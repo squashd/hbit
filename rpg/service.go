@@ -18,17 +18,18 @@ type (
 
 	EventService interface {
 		HandleTaskCompleted(userId string) error
+		Publish(event hbit.EventMessage, routingKeys []string) error
 	}
 	rpgService struct {
-		charSvc   character.Service
-		questSvc  quest.Service
+		charSvc   character.CharacterService
+		questSvc  quest.QuestService
 		publisher *rabbitmq.Publisher
 	}
 )
 
 func NewService(
-	charSvc character.Service,
-	questSvc quest.Service,
+	charSvc character.CharacterService,
+	questSvc quest.QuestService,
 	publisher *rabbitmq.Publisher,
 ) EventService {
 	return &rpgService{
@@ -39,67 +40,33 @@ func NewService(
 }
 
 func (s *rpgService) HandleTaskCompleted(userId string) error {
-	fmt.Printf("rpg service received task complete event for user: %s\n", userId)
 
 	levelUpData := CharacterLevelUpPayload{
 		Level: 69,
 	}
-	payload, err := json.Marshal(levelUpData)
-	if err != nil {
-		return err
-	}
-
-	levelUpEvent := hbit.EventMessage{
-		Type:    "level_up",
-		UserID:  userId,
-		Payload: payload,
-	}
-
-	msg, err := json.Marshal(levelUpEvent)
-	if err != nil {
-		return err
-	}
-
-	err = s.publisher.Publish(
-		msg,
-		[]string{"rpg.character"},
-		rabbitmq.WithPublishOptionsContentType("application/json"),
-		rabbitmq.WithPublishOptionsExchange("events"),
+	levelMsg, err := hbit.NewEventMessage(
+		hbit.CharacterLevelUpEvent,
+		userId,
+		hbit.NewUUID(),
+		levelUpData,
 	)
+	err = s.Publish(levelMsg, []string{"rpg.levelup"})
 	if err != nil {
 		return err
 	}
-
-	fmt.Println("Published level up event")
 
 	awardData := TaskRewardPayload{
 		Gold: 50,
 		Exp:  100,
 		Mana: 10,
 	}
-
-	payload, err = json.Marshal(awardData)
-	if err != nil {
-		return err
-	}
-
-	rewardEvent := hbit.EventMessage{
-		Type:    hbit.TaskRewardEvent,
-		UserID:  userId,
-		Payload: payload,
-	}
-
-	msg, err = json.Marshal(rewardEvent)
-	if err != nil {
-		return err
-	}
-
-	err = s.publisher.Publish(
-		msg,
-		[]string{"rpg.rewards"},
-		rabbitmq.WithPublishOptionsContentType("application/json"),
-		rabbitmq.WithPublishOptionsExchange("events"),
+	rewardMsg, err := hbit.NewEventMessage(
+		hbit.CharacterLevelUpEvent,
+		userId,
+		hbit.NewUUID(),
+		awardData,
 	)
+	err = s.Publish(rewardMsg, []string{"rpg.rewards"})
 	if err != nil {
 		return err
 	}
@@ -109,15 +76,32 @@ func (s *rpgService) HandleTaskCompleted(userId string) error {
 	return nil
 }
 
+func (s *rpgService) Publish(event hbit.EventMessage, routingKeys []string) error {
+	msg, err := json.Marshal(event)
+	if err != nil {
+		return err
+	}
+	err = s.publisher.Publish(
+		msg,
+		routingKeys,
+		rabbitmq.WithPublishOptionsContentType("application/json"),
+		rabbitmq.WithPublishOptionsExchange("events"),
+	)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *rpgService) CleanUp() error {
 	var errs []error
-	if err := s.charSvc.Cleanup(); err != nil {
+	if err := s.charSvc.CleanUp(); err != nil {
 		errs = append(errs, err)
 	}
-	if err := s.questSvc.Cleanup(); err != nil {
+	if err := s.questSvc.CleanUp(); err != nil {
 		errs = append(errs, err)
 	}
-
+	s.publisher.Close()
 	if len(errs) > 0 {
 		return errors.Join(errs...)
 	}

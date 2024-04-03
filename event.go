@@ -1,6 +1,8 @@
 package hbit
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 type (
 	EventType string
@@ -13,30 +15,7 @@ type (
 	}
 
 	Publisher interface {
-		Publish(msg EventMessage, routingKey []string, headers map[string]any) error
-	}
-
-	TaskCompleteMessage struct {
-		TaskID string `json:"userId"`
-	}
-
-	AuthDeleteMessage struct {
-		UserID string `json:"userId"`
-	}
-
-	UserLoginMessage struct {
-		UserID string `json:"userId"`
-	}
-
-	QuestCompleteMessage struct {
-		UserID string `json:"userId"`
-	}
-
-	AchievementUnlockMessage struct {
-		UserID string `json:"userId"`
-	}
-	UserDeleteMessage struct {
-		UserID string `json:"userId"`
+		Publish(msg EventMessage, routingKey []string) error
 	}
 )
 
@@ -52,7 +31,7 @@ const (
 
 	TaskRewardEvent EventType = "task_reward"
 
-	AchievementUnlockEvent EventType = "achievement_unlock"
+	FeatUnlocked EventType = "feat_unlocked"
 )
 
 func NewEventMessage(
@@ -66,12 +45,12 @@ func NewEventMessage(
 		return EventMessage{}, err
 	}
 
-	msg := EventMessage{
+	event := EventMessage{
 		Type:    eventType,
 		UserId:  userId,
 		EventId: eventId,
 		Payload: payloadBytes,
 	}
 
-	return msg, nil
+	return event, nil
 }

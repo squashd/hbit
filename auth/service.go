@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/SQUASHD/hbit"
 	"github.com/SQUASHD/hbit/auth/authdb"
@@ -10,38 +11,39 @@ import (
 )
 
 type (
-	Repository interface {
-		FindUserByUsername(ctx context.Context, username string) (authdb.Auth, error)
-		CreateAuth(ctx context.Context, data authdb.CreateAuthParams) (authdb.Auth, error)
-		FindRevokeToken(ctx context.Context, token string) error
-		DeleteUser(userId string) error
-		RevokeToken(ctx context.Context, form RevokeTokenForm) error
-		IsAdmin(ctx context.Context, userId string) (bool, error)
-		Cleanup() error
-	}
-
 	service struct {
 		jwtConfig config.JwtOptions
-		repo      Repository
+		db        *sql.DB
+		queries   *authdb.Queries
 		publisher *rabbitmq.Publisher
 	}
 )
 
 func NewService(
-	repo Repository,
-	jwtConfig config.JwtOptions,
 	publisher *rabbitmq.Publisher,
+	jwtConfig config.JwtOptions,
+	db *sql.DB,
+	queries *authdb.Queries,
 ) Service {
 	return &service{
 		jwtConfig: jwtConfig,
-		repo:      repo,
 		publisher: publisher,
+		db:        db,
+		queries:   queries,
 	}
 }
 
 func (s *service) Register(ctx context.Context, form CreateUserForm) (AuthDTO, error) {
 	var errs []*hbit.Error
-	_, err := s.repo.FindUserByUsername(ctx, form.Username)
+	tx, er := s.db.Begin()
+	if er != nil {
+		return AuthDTO{}, &hbit.Error{Code: hbit.EINTERNAL, Message: "failed to start transaction"}
+	}
+	defer tx.Rollback()
+
+	qtx := s.queries.WithTx(tx)
+
+	_, err := qtx.FindUserByUsername(ctx, form.Username)
 	if err == nil {
 		errs = append(errs, &hbit.Error{Code: hbit.ECONFLICT, Message: "Username already exists"})
 	}
@@ -60,7 +62,7 @@ func (s *service) Register(ctx context.Context, form CreateUserForm) (AuthDTO, e
 
 	userData := convertUserFormToModel(form, hashedPassword)
 
-	user, err := s.repo.CreateAuth(ctx, userData)
+	user, err := qtx.CreateAuth(ctx, userData)
 	if err != nil {
 		return AuthDTO{}, err
 	}
@@ -73,6 +75,10 @@ func (s *service) Register(ctx context.Context, form CreateUserForm) (AuthDTO, e
 	refreshtoken, err := s.makeRefreshToken(user.UserID)
 	if err != nil {
 		return AuthDTO{}, &hbit.Error{Code: hbit.EINTERNAL, Message: "failed to create tokens"}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return AuthDTO{}, &hbit.Error{Code: hbit.EINTERNAL, Message: "failed to commit transaction"}
 	}
 
 	dto := toDTO(user, accessToken, refreshtoken)
@@ -112,7 +118,7 @@ func convertUserFormToModel(form CreateUserForm, password string) authdb.CreateA
 }
 
 func (s *service) Login(ctx context.Context, form LoginForm) (AuthDTO, error) {
-	user, err := s.repo.FindUserByUsername(ctx, form.Username)
+	user, err := s.queries.FindUserByUsername(ctx, form.Username)
 	if err != nil {
 		return AuthDTO{}, &hbit.Error{Code: hbit.EUNAUTHORIZED, Message: "invalid username or password"}
 	}
@@ -155,7 +161,7 @@ func (s *service) RefreshToken(ctx context.Context, refreshToken string) (access
 		return "", "", &hbit.Error{Code: hbit.EUNAUTHORIZED, Message: "invalid token"}
 	}
 
-	err = s.repo.FindRevokeToken(ctx, refreshToken)
+	_, err = s.queries.FindRevokedToken(ctx, refreshToken)
 	if err == nil {
 		return "", "", &hbit.Error{Code: hbit.EUNAUTHORIZED, Message: "invalid token"}
 	}
@@ -185,7 +191,7 @@ func (s *service) makeRefreshToken(userId string) (string, error) {
 }
 
 func (s *service) RevokeToken(ctx context.Context, form RevokeTokenForm) error {
-	err := s.repo.RevokeToken(ctx, form)
+	err := s.queries.CreateRevokedToken(ctx, form.CreateRevokedTokenParams)
 	if err != nil {
 		return err
 	}
@@ -193,7 +199,7 @@ func (s *service) RevokeToken(ctx context.Context, form RevokeTokenForm) error {
 }
 
 func (s *service) IsAdmin(ctx context.Context, userId string) (bool, error) {
-	_, err := s.repo.IsAdmin(ctx, userId)
+	_, err := s.queries.IsAdmin(ctx, userId)
 	if err != nil {
 		return false, err
 	}
@@ -201,7 +207,7 @@ func (s *service) IsAdmin(ctx context.Context, userId string) (bool, error) {
 }
 
 func (s *service) DeleteUser(userId string) error {
-	err := s.repo.DeleteUser(userId)
+	err := s.queries.DeleteUser(context.Background(), userId)
 	if err != nil {
 		return err
 	}
@@ -209,5 +215,6 @@ func (s *service) DeleteUser(userId string) error {
 }
 
 func (s *service) Cleanup() error {
-	return s.repo.Cleanup()
+	s.publisher.Close()
+	return s.db.Close()
 }

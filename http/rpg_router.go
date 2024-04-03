@@ -7,7 +7,7 @@ import (
 	"github.com/SQUASHD/hbit/rpg/quest"
 )
 
-func NewRPGRouter(charSvc character.Service, questSvc quest.Service) *http.ServeMux {
+func NewRPGRouter(charSvc character.CharacterService, questSvc quest.QuestService) *http.ServeMux {
 	router := http.NewServeMux()
 	charHandler := newCharacterHandler(charSvc)
 

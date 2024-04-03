@@ -8,10 +8,10 @@ import (
 )
 
 type characterHandler struct {
-	charSvc character.Service
+	charSvc character.CharacterService
 }
 
-func newCharacterHandler(charSvc character.Service) *characterHandler {
+func newCharacterHandler(charSvc character.CharacterService) *characterHandler {
 	return &characterHandler{charSvc: charSvc}
 }
 

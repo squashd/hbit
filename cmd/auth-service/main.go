@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"github.com/SQUASHD/hbit/auth"
+	"github.com/SQUASHD/hbit/auth/authdb"
 	"github.com/SQUASHD/hbit/config"
 	"github.com/SQUASHD/hbit/events"
 	"github.com/SQUASHD/hbit/http"
@@ -25,12 +26,14 @@ func main() {
 	}
 	defer conn.Close()
 
-	authDb, err := auth.NewDatabase()
+	db, err := auth.NewDatabase()
 	if err != nil {
 		log.Fatalf("failed to connect to auth database: %v", err)
 	}
-	authRepo := auth.NewRepository(authDb)
-	authSvc := auth.NewService(authRepo, jwtConf, publisher)
+
+	queries := authdb.New(db)
+
+	authSvc := auth.NewService(publisher, jwtConf, db, queries)
 
 	authRouter := http.NewAuthRouter(authSvc)
 	server, err := http.NewServer(authRouter)

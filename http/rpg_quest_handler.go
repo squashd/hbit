@@ -8,10 +8,10 @@ import (
 )
 
 type questHandler struct {
-	questSvc quest.Service
+	questSvc quest.QuestService
 }
 
-func newQuestHandler(questSvc quest.Service) *questHandler {
+func newQuestHandler(questSvc quest.QuestService) *questHandler {
 	return &questHandler{questSvc: questSvc}
 }
 

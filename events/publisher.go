@@ -5,8 +5,7 @@ import (
 	"github.com/wagslane/go-rabbitmq"
 )
 
-func NewPublisher() (*rabbitmq.Publisher, *rabbitmq.Conn, error) {
-	rabbitmqConf := config.RabbitMQ{}
+func NewPublisher(rabbitmqConf config.RabbitMQ) (*rabbitmq.Publisher, *rabbitmq.Conn, error) {
 	connStr := config.NewRabbitConnectionString(rabbitmqConf)
 	conn, err := rabbitmq.NewConn(connStr)
 	if err != nil {

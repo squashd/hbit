@@ -2,37 +2,30 @@ package character
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/SQUASHD/hbit/rpg/rpgdb"
 )
 
 type (
-	Repository interface {
-		ListCharacters(ctx context.Context) ([]rpgdb.Character, error)
-		CreateChracter(ctx context.Context, data rpgdb.CreateCharacterParams) (rpgdb.Character, error)
-		ReadCharacter(ctx context.Context, characterId string) (rpgdb.Character, error)
-		UpdateCharacter(ctx context.Context, data rpgdb.UpdateCharacterParams) (rpgdb.Character, error)
-		DeleteCharacter(ctx context.Context, characterId string) error
-		Cleanup() error
-	}
-
-	UserRepository interface {
-		FindCharacter(ctx context.Context, userId string) (rpgdb.Character, error)
-	}
-
 	service struct {
-		charRepo Repository
+		db      *sql.DB
+		queries *rpgdb.Queries
 	}
 )
 
-func NewService(charRepo Repository) Service {
+func NewService(
+	db *sql.DB,
+	queries *rpgdb.Queries,
+) CharacterService {
 	return &service{
-		charRepo: charRepo,
+		db:      db,
+		queries: queries,
 	}
 }
 
 func (s *service) List(ctx context.Context) ([]DTO, error) {
-	characters, err := s.charRepo.ListCharacters(ctx)
+	characters, err := s.queries.ListCharacters(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +36,7 @@ func (s *service) List(ctx context.Context) ([]DTO, error) {
 }
 
 func (s *service) CreateCharacter(ctx context.Context, form CreateCharacterForm) (DTO, error) {
-	char, err := s.charRepo.CreateChracter(ctx, form.CreateCharacterParams)
+	char, err := s.queries.CreateCharacter(ctx, form.CreateCharacterParams)
 	if err != nil {
 		return DTO{}, err
 	}
@@ -52,7 +45,7 @@ func (s *service) CreateCharacter(ctx context.Context, form CreateCharacterForm)
 }
 
 func (s *service) GetCharacter(ctx context.Context, form ReadCharacterForm) (DTO, error) {
-	char, err := s.charRepo.ReadCharacter(ctx, form.CharacterId)
+	char, err := s.queries.ReadCharacter(ctx, form.CharacterId)
 	if err != nil {
 		return DTO{}, err
 	}
@@ -61,7 +54,7 @@ func (s *service) GetCharacter(ctx context.Context, form ReadCharacterForm) (DTO
 }
 
 func (s *service) UpdateCharacter(ctx context.Context, form UpdateCharacterForm) (DTO, error) {
-	char, err := s.charRepo.UpdateCharacter(ctx, form.UpdateCharacterParams)
+	char, err := s.queries.UpdateCharacter(ctx, form.UpdateCharacterParams)
 	if err != nil {
 		return DTO{}, err
 	}
@@ -70,9 +63,9 @@ func (s *service) UpdateCharacter(ctx context.Context, form UpdateCharacterForm)
 }
 
 func (s *service) DeleteCharacter(ctx context.Context, form DeleteCharacterForm) error {
-	return s.charRepo.DeleteCharacter(ctx, form.CharacterId)
+	return s.queries.DeleteCharacter(ctx, form.CharacterId)
 }
 
-func (s *service) Cleanup() error {
-	return s.charRepo.Cleanup()
+func (s *service) CleanUp() error {
+	return s.db.Close()
 }
