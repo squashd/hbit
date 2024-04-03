@@ -3,9 +3,7 @@ package character
 import "github.com/SQUASHD/hbit/rpg/rpgdb"
 
 type (
-	Character  = rpgdb.Character
-	Characters = []Character
-	DTO        struct {
+	DTO struct {
 		Level        int64 `json:"level"`
 		Experience   int64 `json:"experience"`
 		Health       int64 `json:"health"`
@@ -16,7 +14,7 @@ type (
 	}
 )
 
-func characterToDto(char Character) DTO {
+func characterToDto(char rpgdb.Character) DTO {
 	return DTO{
 		Level:        char.CharacterLevel,
 		Experience:   char.Experience,
@@ -28,7 +26,7 @@ func characterToDto(char Character) DTO {
 	}
 }
 
-func charactersToDtos(characters Characters) []DTO {
+func charactersToDtos(characters []rpgdb.Character) []DTO {
 	dtos := make([]DTO, len(characters))
 	for i, char := range characters {
 		dtos[i] = characterToDto(char)

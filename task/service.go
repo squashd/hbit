@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/SQUASHD/hbit"
@@ -111,6 +112,27 @@ func (s *service) Cleanup() error {
 	return s.repo.Cleanup()
 }
 
-func (s *service) DummyPublish() error {
-	return s.publisher.Publish([]byte("dummy"), []string{"task.created"}, nil)
+func (s *service) Test(ctx context.Context, userId string) error {
+	event := hbit.EventMessage{
+		Type:   "task_complete",
+		UserID: "42069",
+	}
+	msg, err := json.Marshal(&event)
+	if err != nil {
+		return err
+	}
+
+	err = s.publisher.Publish(
+		msg,
+		[]string{"task.done"},
+		rabbitmq.WithPublishOptionsContentType("application/json"),
+		rabbitmq.WithPublishOptionsExchange("events"),
+	)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("published task complete event")
+
+	return nil
 }

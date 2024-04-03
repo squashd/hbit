@@ -2,6 +2,7 @@ package events
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/SQUASHD/hbit"
 	"github.com/SQUASHD/hbit/config"
@@ -17,13 +18,14 @@ func NewFeatEventConsumer(rabbitmqConf config.RabbitMQ) (*rabbitmq.Consumer, *ra
 	}
 	consumer, err := rabbitmq.NewConsumer(
 		conn,
-		"events",
+		"feats",
 		rabbitmq.WithConsumerOptionsRoutingKey("task.*"),
-		rabbitmq.WithConsumerOptionsRoutingKey("quest.*"),
 		rabbitmq.WithConsumerOptionsRoutingKey("auth.delete"),
-		rabbitmq.WithConsumerOptionsRoutingKey("char.*"),
-		rabbitmq.WithConsumerOptionsExchangeKind("topic"),
+		rabbitmq.WithConsumerOptionsRoutingKey("auth.login"),
+		rabbitmq.WithConsumerOptionsRoutingKey("character.level_up"),
+		rabbitmq.WithConsumerOptionsRoutingKey("quest.complete"),
 		rabbitmq.WithConsumerOptionsExchangeName("events"),
+		rabbitmq.WithConsumerOptionsExchangeKind("topic"),
 		rabbitmq.WithConsumerOptionsExchangeDeclare,
 	)
 	if err != nil {
@@ -33,46 +35,26 @@ func NewFeatEventConsumer(rabbitmqConf config.RabbitMQ) (*rabbitmq.Consumer, *ra
 	return consumer, conn, nil
 }
 
-type EventHandler func(d rabbitmq.Delivery) rabbitmq.Action
-
-type featConsumerHandler struct {
+type featEventHandler struct {
 	featSvc feat.Service
 }
 
-func NewFeatConsumerHandler(svc feat.Service) *featConsumerHandler {
-	return &featConsumerHandler{featSvc: svc}
+func NewFeatEventHandler(svc feat.Service) *featEventHandler {
+	return &featEventHandler{featSvc: svc}
 }
 
-func (h *featConsumerHandler) HandleEvents(d rabbitmq.Delivery) rabbitmq.Action {
+func (h *featEventHandler) HandleEvents(d rabbitmq.Delivery) rabbitmq.Action {
 	var event hbit.EventMessage
 	if err := json.Unmarshal(d.Body, &event); err != nil {
+		fmt.Printf("failed to unmarshal event: %v\n", err)
 		return rabbitmq.NackDiscard
 	}
 	switch event.Type {
-	case "task.created":
-		// do something
-	case "task.updated":
-		// do something
-	case "task.deleted":
-		// do something
-	case "quest.created":
-		// do something
-	case "quest.updated":
-		// do something
-	case "quest.deleted":
-		// do something
-	case "auth.delete":
-		// do something
-	case "char.created":
-		// do something
-	case "char.updated":
-		// do something
-	case "char.deleted":
-		// do something
+	case "task_complete":
+		fmt.Printf("feats service received task complete event for user: %s\n", event.UserID)
+		return rabbitmq.Ack
 	default:
 		return rabbitmq.NackDiscard
+
 	}
-
-	return rabbitmq.Ack
-
 }

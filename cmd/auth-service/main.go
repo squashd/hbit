@@ -12,6 +12,7 @@ import (
 	"github.com/SQUASHD/hbit/config"
 	"github.com/SQUASHD/hbit/events"
 	"github.com/SQUASHD/hbit/http"
+	_ "github.com/tursodatabase/libsql-client-go/libsql"
 )
 
 func main() {
@@ -25,6 +26,9 @@ func main() {
 	defer conn.Close()
 
 	authDb, err := auth.NewDatabase()
+	if err != nil {
+		log.Fatalf("failed to connect to auth database: %v", err)
+	}
 	authRepo := auth.NewRepository(authDb)
 	authSvc := auth.NewService(authRepo, jwtConf, publisher)
 
@@ -51,7 +55,7 @@ func main() {
 
 		close(closed)
 	}()
-	fmt.Printf("Server is running on port %d\n", server.Addr)
+	fmt.Printf("Server is running on port %s\n", server.Addr)
 	if err = server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("cannot start server: %s", err)
 	}

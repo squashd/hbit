@@ -96,3 +96,13 @@ func (h *taskHandler) Delete(w http.ResponseWriter, r *http.Request, requestedBy
 
 	RespondWithJSON(w, http.StatusOK, map[string]string{"result": "success"})
 }
+
+func (h *taskHandler) Test(w http.ResponseWriter, r *http.Request) {
+	err := h.taskSvc.Test(r.Context(), "test")
+	if err != nil {
+		Error(w, r, err)
+		return
+	}
+
+	RespondWithJSON(w, http.StatusOK, map[string]string{"result": "success"})
+}

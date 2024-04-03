@@ -14,10 +14,10 @@ type (
 	}
 
 	UserCharacterService interface {
-		Create(ctx context.Context, form CreateCharacterForm) (DTO, error)
-		Read(ctx context.Context, form ReadCharacterForm) (DTO, error)
-		Update(ctx context.Context, form UpdateCharacterForm) (DTO, error)
-		Delete(ctx context.Context, form DeleteCharacterForm) error
+		CreateCharacter(ctx context.Context, form CreateCharacterForm) (DTO, error)
+		GetCharacter(ctx context.Context, form ReadCharacterForm) (DTO, error)
+		UpdateCharacter(ctx context.Context, form UpdateCharacterForm) (DTO, error)
+		DeleteCharacter(ctx context.Context, form DeleteCharacterForm) error
 	}
 
 	CreateCharacterForm struct {

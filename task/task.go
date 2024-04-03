@@ -33,6 +33,7 @@ type (
 		Create(ctx context.Context, form CreateTaskForm) (DTO, error)
 		Update(ctx context.Context, form UpdateTaskForm) (DTO, error)
 		Delete(ctx context.Context, form DeleteTaskForm) error
+		Test(ctx context.Context, userId string) error
 	}
 
 	InternalService interface {

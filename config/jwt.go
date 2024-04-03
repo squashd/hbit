@@ -23,8 +23,8 @@ func NewJwtConfig(options ...func(*JwtOptions),
 func getDefaultJwtOptions() JwtOptions {
 	return JwtOptions{
 		JwtSecret:       "",
-		AccessDuration:  time.Minute * 15,
-		RefreshDuration: time.Minute * 24,
+		AccessDuration:  time.Minute * 1,
+		RefreshDuration: time.Minute * 60 * 24,
 		AccessIssuer:    "access",
 		RefreshIssuer:   "refresh",
 	}
@@ -36,15 +36,15 @@ func WithJwtOptionsSecret(secret string) func(*JwtOptions) {
 	}
 }
 
-func WithJwtOptionsAccessDuration(duration int) func(*JwtOptions) {
+func WithJwtOptionsAccessDuration(duration time.Duration) func(*JwtOptions) {
 	return func(options *JwtOptions) {
-		options.AccessDuration = time.Minute * time.Duration(duration)
+		options.AccessDuration = duration
 	}
 }
 
-func WithJwtOptionsRefreshDuration(duration int) func(*JwtOptions) {
+func WithJwtOptionsRefreshDuration(duration time.Duration) func(*JwtOptions) {
 	return func(options *JwtOptions) {
-		options.RefreshDuration = time.Minute * time.Duration(duration)
+		options.RefreshDuration = duration
 	}
 }
 

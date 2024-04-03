@@ -3,9 +3,12 @@ package hbit
 import "encoding/json"
 
 type (
+	EventType string
+
 	EventMessage struct {
-		Type    string          `json:"type"`
-		UserID  string          `json:"userId"`
+		Type    EventType       `json:"type"`
+		UserId  string          `json:"user_id"`
+		EventId string          `json:"event_id"`
 		Payload json.RawMessage `json:"payload"`
 	}
 
@@ -14,7 +17,7 @@ type (
 	}
 
 	TaskCompleteMessage struct {
-		UserID string `json:"userId"`
+		TaskID string `json:"userId"`
 	}
 
 	AuthDeleteMessage struct {
@@ -22,10 +25,6 @@ type (
 	}
 
 	UserLoginMessage struct {
-		UserID string `json:"userId"`
-	}
-
-	CharacterLevelUpMessage struct {
 		UserID string `json:"userId"`
 	}
 
@@ -40,3 +39,39 @@ type (
 		UserID string `json:"userId"`
 	}
 )
+
+const (
+	TaskCompleteEvent EventType = "task_complete"
+
+	AuthDeleteEvent EventType = "auth_delete"
+	AuthLoginEvent  EventType = "auth_login"
+
+	CharacterLevelUpEvent EventType = "character_level_up"
+
+	QuestCompleteEvent EventType = "quest_complete"
+
+	TaskRewardEvent EventType = "task_reward"
+
+	AchievementUnlockEvent EventType = "achievement_unlock"
+)
+
+func NewEventMessage(
+	eventType EventType,
+	userId, eventId string,
+	payload any,
+) (EventMessage, error) {
+
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		return EventMessage{}, err
+	}
+
+	msg := EventMessage{
+		Type:    eventType,
+		UserId:  userId,
+		EventId: eventId,
+		Payload: payloadBytes,
+	}
+
+	return msg, nil
+}

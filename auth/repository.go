@@ -14,11 +14,6 @@ type repository struct {
 	db      *sql.DB
 }
 
-// DeleteUser implements Repository.
-func (r *repository) DeleteUser(userId string) error {
-	return r.queries.DeleteUser(context.Background(), userId)
-}
-
 func NewRepository(db *sql.DB) Repository {
 	queries := authdb.New(db)
 	return &repository{
@@ -62,6 +57,10 @@ func (r *repository) IsAdmin(ctx context.Context, userId string) (bool, error) {
 		return false, &hbit.Error{Code: hbit.EINTERNAL, Message: err.Error()}
 	}
 	return true, nil
+}
+
+func (r *repository) DeleteUser(userId string) error {
+	return r.queries.DeleteUser(context.Background(), userId)
 }
 
 func (r *repository) Cleanup() error {

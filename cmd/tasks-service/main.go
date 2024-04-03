@@ -11,6 +11,7 @@ import (
 	"github.com/SQUASHD/hbit/events"
 	"github.com/SQUASHD/hbit/http"
 	"github.com/SQUASHD/hbit/task"
+	_ "github.com/tursodatabase/libsql-client-go/libsql"
 )
 
 func main() {
@@ -19,6 +20,7 @@ func main() {
 		log.Fatalf("cannot create task publisher: %s", err)
 	}
 	defer conn.Close()
+
 	taskDb, err := task.NewDatabase()
 	if err != nil {
 		log.Fatalf("failed to connect to task database: %v", err)
@@ -27,7 +29,10 @@ func main() {
 	taskSvc := task.NewService(taskRepo, publisher)
 
 	taskRouter := http.NewTaskRouter(taskSvc)
-	server, err := http.NewServer(taskRouter)
+	server, err := http.NewServer(
+		taskRouter,
+		http.WithServerOptionsPort(9001),
+	)
 	if err != nil {
 		log.Fatalf("failed to create server: %v", err)
 	}

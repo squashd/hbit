@@ -9,8 +9,8 @@ import (
 )
 
 func NewDatabase() (*sql.DB, error) {
-	url := os.Getenv("QUEST_DB_URL")
-	token := os.Getenv("QUEST_DB_TOKEN")
+	url := os.Getenv("RPG_DB_URL")
+	token := os.Getenv("RPG_DB_TOKEN")
 	connectionStr := fmt.Sprintf("%s?authToken=%s", url, token)
 	db, err := sql.Open("libsql", connectionStr)
 	if err != nil {

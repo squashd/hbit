@@ -32,7 +32,7 @@ func (h *characterHandler) CharacterGet(w http.ResponseWriter, r *http.Request, 
 		CharacterId:   id,
 	}
 
-	character, err := h.charSvc.Read(r.Context(), form)
+	character, err := h.charSvc.GetCharacter(r.Context(), form)
 	if err != nil {
 		Error(w, r, err)
 		return
@@ -54,7 +54,7 @@ func (h *characterHandler) CharacterCreate(w http.ResponseWriter, r *http.Reques
 		RequestedById:         requestedById,
 	}
 
-	character, err := h.charSvc.Create(r.Context(), form)
+	character, err := h.charSvc.CreateCharacter(r.Context(), form)
 	if err != nil {
 		Error(w, r, err)
 		return
@@ -78,7 +78,7 @@ func (h *characterHandler) CharacterUpdate(w http.ResponseWriter, r *http.Reques
 		CharacterId:           id,
 	}
 
-	character, err := h.charSvc.Update(r.Context(), form)
+	character, err := h.charSvc.UpdateCharacter(r.Context(), form)
 	if err != nil {
 		Error(w, r, err)
 		return
@@ -95,7 +95,7 @@ func (h *characterHandler) CharacterDelete(w http.ResponseWriter, r *http.Reques
 		CharacterId:   id,
 	}
 
-	if err := h.charSvc.Delete(r.Context(), form); err != nil {
+	if err := h.charSvc.DeleteCharacter(r.Context(), form); err != nil {
 		Error(w, r, err)
 		return
 	}

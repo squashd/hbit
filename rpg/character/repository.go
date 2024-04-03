@@ -17,23 +17,23 @@ func NewRepository(db *sql.DB) Repository {
 	return &repository{queries: queries, db: db}
 }
 
-func (r *repository) List(ctx context.Context) (Characters, error) {
+func (r *repository) ListCharacters(ctx context.Context) ([]rpgdb.Character, error) {
 	return r.queries.ListCharacters(ctx)
 }
 
-func (r *repository) Create(ctx context.Context, data rpgdb.CreateCharacterParams) (Character, error) {
+func (r *repository) CreateChracter(ctx context.Context, data rpgdb.CreateCharacterParams) (rpgdb.Character, error) {
 	return r.queries.CreateCharacter(ctx, data)
 }
 
-func (r *repository) Read(ctx context.Context, characterId string) (Character, error) {
+func (r *repository) ReadCharacter(ctx context.Context, characterId string) (rpgdb.Character, error) {
 	return r.queries.ReadCharacter(ctx, characterId)
 }
 
-func (r *repository) Update(ctx context.Context, data rpgdb.UpdateCharacterParams) (Character, error) {
+func (r *repository) UpdateCharacter(ctx context.Context, data rpgdb.UpdateCharacterParams) (rpgdb.Character, error) {
 	return r.queries.UpdateCharacter(ctx, data)
 }
 
-func (r *repository) Delete(ctx context.Context, characterId string) error {
+func (r *repository) DeleteCharacter(ctx context.Context, characterId string) error {
 	return r.queries.DeleteCharacter(ctx, characterId)
 }
 

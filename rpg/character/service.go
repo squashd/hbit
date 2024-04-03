@@ -8,12 +8,16 @@ import (
 
 type (
 	Repository interface {
-		List(ctx context.Context) (Characters, error)
-		Create(ctx context.Context, data rpgdb.CreateCharacterParams) (Character, error)
-		Read(ctx context.Context, characterId string) (Character, error)
-		Update(ctx context.Context, data rpgdb.UpdateCharacterParams) (Character, error)
-		Delete(ctx context.Context, characterId string) error
+		ListCharacters(ctx context.Context) ([]rpgdb.Character, error)
+		CreateChracter(ctx context.Context, data rpgdb.CreateCharacterParams) (rpgdb.Character, error)
+		ReadCharacter(ctx context.Context, characterId string) (rpgdb.Character, error)
+		UpdateCharacter(ctx context.Context, data rpgdb.UpdateCharacterParams) (rpgdb.Character, error)
+		DeleteCharacter(ctx context.Context, characterId string) error
 		Cleanup() error
+	}
+
+	UserRepository interface {
+		FindCharacter(ctx context.Context, userId string) (rpgdb.Character, error)
 	}
 
 	service struct {
@@ -28,7 +32,7 @@ func NewService(charRepo Repository) Service {
 }
 
 func (s *service) List(ctx context.Context) ([]DTO, error) {
-	characters, err := s.charRepo.List(ctx)
+	characters, err := s.charRepo.ListCharacters(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -38,8 +42,8 @@ func (s *service) List(ctx context.Context) ([]DTO, error) {
 	return dtos, nil
 }
 
-func (s *service) Create(ctx context.Context, form CreateCharacterForm) (DTO, error) {
-	char, err := s.charRepo.Create(ctx, form.CreateCharacterParams)
+func (s *service) CreateCharacter(ctx context.Context, form CreateCharacterForm) (DTO, error) {
+	char, err := s.charRepo.CreateChracter(ctx, form.CreateCharacterParams)
 	if err != nil {
 		return DTO{}, err
 	}
@@ -47,8 +51,8 @@ func (s *service) Create(ctx context.Context, form CreateCharacterForm) (DTO, er
 	return characterToDto(char), nil
 }
 
-func (s *service) Read(ctx context.Context, form ReadCharacterForm) (DTO, error) {
-	char, err := s.charRepo.Read(ctx, form.CharacterId)
+func (s *service) GetCharacter(ctx context.Context, form ReadCharacterForm) (DTO, error) {
+	char, err := s.charRepo.ReadCharacter(ctx, form.CharacterId)
 	if err != nil {
 		return DTO{}, err
 	}
@@ -56,8 +60,8 @@ func (s *service) Read(ctx context.Context, form ReadCharacterForm) (DTO, error)
 	return characterToDto(char), nil
 }
 
-func (s *service) Update(ctx context.Context, form UpdateCharacterForm) (DTO, error) {
-	char, err := s.charRepo.Update(ctx, form.UpdateCharacterParams)
+func (s *service) UpdateCharacter(ctx context.Context, form UpdateCharacterForm) (DTO, error) {
+	char, err := s.charRepo.UpdateCharacter(ctx, form.UpdateCharacterParams)
 	if err != nil {
 		return DTO{}, err
 	}
@@ -65,8 +69,8 @@ func (s *service) Update(ctx context.Context, form UpdateCharacterForm) (DTO, er
 	return characterToDto(char), nil
 }
 
-func (s *service) Delete(ctx context.Context, form DeleteCharacterForm) error {
-	return s.charRepo.Delete(ctx, form.CharacterId)
+func (s *service) DeleteCharacter(ctx context.Context, form DeleteCharacterForm) error {
+	return s.charRepo.DeleteCharacter(ctx, form.CharacterId)
 }
 
 func (s *service) Cleanup() error {

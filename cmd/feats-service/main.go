@@ -13,6 +13,7 @@ import (
 	"github.com/SQUASHD/hbit/events"
 	"github.com/SQUASHD/hbit/feat"
 	"github.com/SQUASHD/hbit/http"
+	_ "github.com/tursodatabase/libsql-client-go/libsql"
 )
 
 func main() {
@@ -27,10 +28,13 @@ func main() {
 		log.Fatalf("cannot create feat consumer: %s", err)
 	}
 	defer conn.Close()
-	eventHandler := events.NewFeatConsumerHandler(featSvc)
+	eventHandler := events.NewFeatEventHandler(featSvc)
 
 	featRouter := http.NewFeatRouter(featSvc)
-	server, err := http.NewServer(featRouter)
+	server, err := http.NewServer(
+		featRouter,
+		http.WithServerOptionsPort(8001),
+	)
 	if err != nil {
 		log.Fatalf("cannot create server: %s", err)
 	}
@@ -41,6 +45,7 @@ func main() {
 		signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
 		<-sigint
 
+		consumer.Close()
 		fmt.Println("\nShutting down server...")
 
 		ctx, cancel := context.WithTimeout(context.Background(), server.IdleTimeout)

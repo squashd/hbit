@@ -5,23 +5,22 @@ import (
 	"github.com/wagslane/go-rabbitmq"
 )
 
-func NewTaskPublisher() (*rabbitmq.Publisher, *rabbitmq.Conn, error) {
+func NewAuthPublisher() (*rabbitmq.Publisher, *rabbitmq.Conn, error) {
 	rabbitmqConf := config.RabbitMQ{}
 	connStr := config.NewRabbitConnectionString(rabbitmqConf)
 	conn, err := rabbitmq.NewConn(connStr)
 	if err != nil {
 		return nil, nil, err
 	}
-	taskPublisher, err := rabbitmq.NewPublisher(
+	authPub, err := rabbitmq.NewPublisher(
 		conn,
 		rabbitmq.WithPublisherOptionsLogging,
-		rabbitmq.WithPublisherOptionsExchangeKind("topic"),
 		rabbitmq.WithPublisherOptionsExchangeName("events"),
+		rabbitmq.WithPublisherOptionsExchangeKind("topic"),
 		rabbitmq.WithPublisherOptionsExchangeDeclare,
 	)
 	if err != nil {
 		return nil, nil, err
 	}
-
-	return taskPublisher, conn, nil
+	return authPub, conn, nil
 }

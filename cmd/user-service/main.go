@@ -10,6 +10,7 @@ import (
 
 	"github.com/SQUASHD/hbit/http"
 	"github.com/SQUASHD/hbit/user"
+	_ "github.com/tursodatabase/libsql-client-go/libsql"
 )
 
 func main() {
