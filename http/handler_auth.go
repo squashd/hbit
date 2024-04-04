@@ -37,7 +37,9 @@ func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	RespondWithJSON(w, http.StatusOK, dto)
+	setAccessCookie(w, dto.AccessToken, h.jwtConf.AccessDuration)
+	SetRefreshCookie(w, dto.RefreshToken, h.jwtConf.RefreshDuration)
+	respondWithJSON(w, http.StatusOK, dto)
 }
 
 func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) {
@@ -56,12 +58,15 @@ func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	RespondWithJSON(w, http.StatusOK, loginDto)
+	setAccessCookie(w, loginDto.AccessToken, h.jwtConf.AccessDuration)
+	SetRefreshCookie(w, loginDto.RefreshToken, h.jwtConf.RefreshDuration)
+
+	respondWithJSON(w, http.StatusOK, loginDto)
 }
 
 func (h *authHandler) SignOut(w http.ResponseWriter, r *http.Request) {
-	ClearTokensFromCookie(w)
-	RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Successfully signed out"})
+	clearTokensFromCookie(w)
+	respondWithJSON(w, http.StatusOK, map[string]string{"message": "Successfully signed out"})
 }
 
 func (h *authHandler) Revoke(w http.ResponseWriter, r *http.Request) {
@@ -80,7 +85,7 @@ func (h *authHandler) Revoke(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Successfully revoked token"})
+	respondWithJSON(w, http.StatusOK, map[string]string{"message": "Successfully revoked token"})
 }
 func (h *authHandler) Verify(w http.ResponseWriter, r *http.Request) {
 	userId, err := authenticateUser(w, r, h.authSvc, h.jwtConf)
@@ -89,14 +94,14 @@ func (h *authHandler) Verify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	r.Header.Set("X-User-Id", userId)
-	RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Successfully verified token"})
+	respondWithJSON(w, http.StatusOK, map[string]string{"message": "Successfully verified token"})
 }
 
 func (h *authHandler) AdminRouterMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userId, err := h.authSvc.AuthenticateUser(r.Context(), GetAccessTokenFromCookie(r))
+		userId, err := h.authSvc.AuthenticateUser(r.Context(), getAccessTokenFromCookie(r))
 		if err != nil {
-			ClearTokensFromCookie(w)
+			clearTokensFromCookie(w)
 			Error(w, r, err)
 			return
 		}
@@ -123,9 +128,10 @@ func (h *authHandler) AuthMiddleware(next http.Handler) http.Handler {
 }
 
 func authenticateUser(w http.ResponseWriter, r *http.Request, svc auth.Service, jwtConf config.JwtOptions) (userID string, err error) {
-	refreshToken := GetRefreshTokenFromCookie(r)
-	accessToken := GetAccessTokenFromCookie(r)
+	refreshToken := getRefreshTokenFromCookie(r)
+	accessToken := getAccessTokenFromCookie(r)
 	if refreshToken == "" {
+		clearTokensFromCookie(w)
 		return "", &hbit.Error{Code: hbit.EUNAUTHORIZED, Message: "Missing refresh token"}
 	}
 	if accessToken == "" {
@@ -133,7 +139,7 @@ func authenticateUser(w http.ResponseWriter, r *http.Request, svc auth.Service, 
 		if err != nil {
 			return "", err
 		}
-		SetAccessCookie(w, accessToken, jwtConf.AccessDuration)
+		setAccessCookie(w, accessToken, jwtConf.AccessDuration)
 	} else {
 		userID, err = svc.AuthenticateUser(r.Context(), accessToken)
 		if err != nil {

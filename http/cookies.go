@@ -1,6 +1,7 @@
 package http
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 )
@@ -10,7 +11,7 @@ const (
 	REFRESH_TOKEN = "refresh_jwt"
 )
 
-func ClearAccessCookie(w http.ResponseWriter) {
+func clearAccessCookie(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     ACCESS_TOKEN,
 		Value:    "",
@@ -21,7 +22,7 @@ func ClearAccessCookie(w http.ResponseWriter) {
 	})
 }
 
-func ClearRefreshCookie(w http.ResponseWriter) {
+func clearRefreshCookie(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     REFRESH_TOKEN,
 		Value:    "",
@@ -32,36 +33,38 @@ func ClearRefreshCookie(w http.ResponseWriter) {
 	})
 }
 
-func ClearTokensFromCookie(w http.ResponseWriter) {
-	ClearAccessCookie(w)
-	ClearRefreshCookie(w)
+func clearTokensFromCookie(w http.ResponseWriter) {
+	clearAccessCookie(w)
+	clearRefreshCookie(w)
 }
 
-func SetAccessCookie(w http.ResponseWriter, token string, duration time.Duration) {
+func setAccessCookie(w http.ResponseWriter, token string, duration time.Duration) {
+	fmt.Printf("Received token: %s\n", token)
 	http.SetCookie(w, &http.Cookie{
 		Name:     ACCESS_TOKEN,
 		Value:    token,
 		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: http.SameSiteNoneMode,
 		Path:     "/",
 		Secure:   true,
-		Expires:  time.Now().Add(duration),
+		Expires:  time.Now().UTC().Add(duration),
 	})
 }
 
 func SetRefreshCookie(w http.ResponseWriter, token string, duration time.Duration) {
+	fmt.Printf("Received token: %s\n", token)
 	http.SetCookie(w, &http.Cookie{
 		Name:     REFRESH_TOKEN,
 		Value:    token,
 		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: http.SameSiteNoneMode,
 		Secure:   true,
 		Path:     "/",
-		Expires:  time.Now().Add(time.Duration(duration)),
+		Expires:  time.Now().UTC().Add(duration),
 	})
 }
 
-func GetAccessTokenFromCookie(r *http.Request) string {
+func getAccessTokenFromCookie(r *http.Request) string {
 	cookie, err := r.Cookie(ACCESS_TOKEN)
 	if err != nil {
 		return ""
@@ -69,17 +72,9 @@ func GetAccessTokenFromCookie(r *http.Request) string {
 	return cookie.Value
 }
 
-func GetRefreshTokenFromCookie(r *http.Request) string {
+func getRefreshTokenFromCookie(r *http.Request) string {
 	cookie, err := r.Cookie(REFRESH_TOKEN)
-	if err != nil {
-		return ""
-	}
-	return cookie.Value
-}
-
-func GetCookieValue(r *http.Request, key string) string {
-	cookie, err := r.Cookie(key)
-	if err != nil {
+	if err != nil || cookie == nil {
 		return ""
 	}
 	return cookie.Value
