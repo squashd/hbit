@@ -1,7 +1,6 @@
 package http
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 )
@@ -39,7 +38,6 @@ func clearTokensFromCookie(w http.ResponseWriter) {
 }
 
 func setAccessCookie(w http.ResponseWriter, token string, duration time.Duration) {
-	fmt.Printf("Received token: %s\n", token)
 	http.SetCookie(w, &http.Cookie{
 		Name:     ACCESS_TOKEN,
 		Value:    token,
@@ -52,7 +50,6 @@ func setAccessCookie(w http.ResponseWriter, token string, duration time.Duration
 }
 
 func SetRefreshCookie(w http.ResponseWriter, token string, duration time.Duration) {
-	fmt.Printf("Received token: %s\n", token)
 	http.SetCookie(w, &http.Cookie{
 		Name:     REFRESH_TOKEN,
 		Value:    token,
