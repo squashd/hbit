@@ -47,7 +47,7 @@ func Error(w http.ResponseWriter, r *http.Request, err error) {
 				fmt.Printf("Error: %v\n", e)
 			}
 		}
-		RespondWithJSON(w, ErrorStatusCode(hbit.EINVALID), ErrorResponse{Error: strings.Join(messages, ", ")})
+		respondWithJSON(w, ErrorStatusCode(hbit.EINVALID), ErrorResponse{Error: strings.Join(messages, ", ")})
 		return
 
 	default:
@@ -55,7 +55,7 @@ func Error(w http.ResponseWriter, r *http.Request, err error) {
 		if code == hbit.EINTERNAL {
 			fmt.Printf("Error: %v\n", err)
 		}
-		RespondWithJSON(w, ErrorStatusCode(code), ErrorResponse{Error: message})
+		respondWithJSON(w, ErrorStatusCode(code), ErrorResponse{Error: message})
 	}
 }
 

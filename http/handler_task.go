@@ -22,7 +22,7 @@ func (h *taskHandler) FindAll(w http.ResponseWriter, r *http.Request, userId str
 		Error(w, r, err)
 		return
 	}
-	RespondWithJSON(w, http.StatusOK, tasks)
+	respondWithJSON(w, http.StatusOK, tasks)
 }
 
 func (h *taskHandler) Get(w http.ResponseWriter, r *http.Request, requestedById string) {
@@ -31,7 +31,7 @@ func (h *taskHandler) Get(w http.ResponseWriter, r *http.Request, requestedById 
 		Error(w, r, err)
 		return
 	}
-	RespondWithJSON(w, http.StatusOK, todos)
+	respondWithJSON(w, http.StatusOK, todos)
 
 }
 
@@ -55,7 +55,7 @@ func (h *taskHandler) Create(w http.ResponseWriter, r *http.Request, requestedBy
 		return
 	}
 
-	RespondWithJSON(w, http.StatusCreated, todo)
+	respondWithJSON(w, http.StatusCreated, todo)
 }
 
 func (h *taskHandler) Update(w http.ResponseWriter, r *http.Request, requestedById string) {
@@ -80,7 +80,7 @@ func (h *taskHandler) Update(w http.ResponseWriter, r *http.Request, requestedBy
 		return
 	}
 
-	RespondWithJSON(w, http.StatusOK, todo)
+	respondWithJSON(w, http.StatusOK, todo)
 }
 
 func (h *taskHandler) Delete(w http.ResponseWriter, r *http.Request, requestedById string) {
@@ -97,5 +97,5 @@ func (h *taskHandler) Delete(w http.ResponseWriter, r *http.Request, requestedBy
 		return
 	}
 
-	RespondWithJSON(w, http.StatusOK, map[string]string{"result": "success"})
+	respondWithJSON(w, http.StatusOK, map[string]string{"result": "success"})
 }

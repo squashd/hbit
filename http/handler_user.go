@@ -23,7 +23,7 @@ func (h *userHandler) SettingsGet(w http.ResponseWriter, r *http.Request, reques
 		return
 	}
 
-	RespondWithJSON(w, http.StatusOK, settings)
+	respondWithJSON(w, http.StatusOK, settings)
 }
 
 func (h *userHandler) SettingsUpdate(w http.ResponseWriter, r *http.Request, requestedById string) {
@@ -46,5 +46,5 @@ func (h *userHandler) SettingsUpdate(w http.ResponseWriter, r *http.Request, req
 		return
 	}
 
-	RespondWithJSON(w, http.StatusOK, settings)
+	respondWithJSON(w, http.StatusOK, settings)
 }

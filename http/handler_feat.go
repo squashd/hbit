@@ -20,5 +20,5 @@ func (h *featHandler) FeatsGet(w http.ResponseWriter, r *http.Request, userId st
 		Error(w, r, err)
 		return
 	}
-	RespondWithJSON(w, http.StatusOK, achievements)
+	respondWithJSON(w, http.StatusOK, achievements)
 }
