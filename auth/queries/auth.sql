@@ -8,9 +8,9 @@ WHERE
 
 -- name: CreateAuth :one
 INSERT INTO
-    auth (username, hashed_password)
+    auth (user_id, username, hashed_password)
 VALUES
-    (?, ?) RETURNING *;
+    (?, ?, ?) RETURNING *;
 
 -- name: UpdateUser :one
 UPDATE

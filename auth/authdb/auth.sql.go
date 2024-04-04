@@ -12,18 +12,19 @@ import (
 
 const createAuth = `-- name: CreateAuth :one
 INSERT INTO
-    auth (username, hashed_password)
+    auth (user_id, username, hashed_password)
 VALUES
-    (?, ?) RETURNING user_id, username, hashed_password, created_at, updated_at
+    (?, ?, ?) RETURNING user_id, username, hashed_password, created_at, updated_at
 `
 
 type CreateAuthParams struct {
+	UserID         string `json:"user_id"`
 	Username       string `json:"username"`
 	HashedPassword string `json:"hashed_password"`
 }
 
 func (q *Queries) CreateAuth(ctx context.Context, arg CreateAuthParams) (Auth, error) {
-	row := q.db.QueryRowContext(ctx, createAuth, arg.Username, arg.HashedPassword)
+	row := q.db.QueryRowContext(ctx, createAuth, arg.UserID, arg.Username, arg.HashedPassword)
 	var i Auth
 	err := row.Scan(
 		&i.UserID,

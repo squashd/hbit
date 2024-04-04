@@ -13,7 +13,7 @@ func MakeJWT(userId, tokenSecret, issuer string, duration time.Duration) (string
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
 		Issuer:    issuer,
 		IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
-		ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(time.Duration(duration) * time.Minute)),
+		ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(time.Duration(duration))),
 		Subject:   userId,
 	})
 	return token.SignedString(signingKey)
