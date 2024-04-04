@@ -5,6 +5,7 @@ import (
 
 	"github.com/SQUASHD/hbit"
 	"github.com/SQUASHD/hbit/rpg"
+	"github.com/SQUASHD/hbit/task"
 	"github.com/wagslane/go-rabbitmq"
 )
 
@@ -29,28 +30,25 @@ func NewRPGEventConsumer(url string) (*rabbitmq.Consumer, *rabbitmq.Conn, error)
 	return consumer, conn, nil
 }
 
-type rpgConsumerHandler struct {
-	rpgSvc rpg.EventService
-}
-
-func NewRPGConsumerHandler(svc rpg.EventService) *rpgConsumerHandler {
-	return &rpgConsumerHandler{rpgSvc: svc}
-}
-
-func (h *rpgConsumerHandler) HandleEvents(d rabbitmq.Delivery) rabbitmq.Action {
-	var event hbit.EventMessage
-	if err := json.Unmarshal(d.Body, &event); err != nil {
-		return rabbitmq.NackDiscard
-	}
-	switch event.Type {
-	case hbit.TASKDONE:
-		// TODO: Handle task done event
-		if err := h.rpgSvc.HandleTaskCompleted(event.UserId, "1"); err != nil {
+func RPGConsumerHandler(svc rpg.EventService) func(d rabbitmq.Delivery) rabbitmq.Action {
+	return func(d rabbitmq.Delivery) rabbitmq.Action {
+		var event hbit.EventMessage
+		if err := json.Unmarshal(d.Body, &event); err != nil {
 			return rabbitmq.NackDiscard
 		}
-		return rabbitmq.Ack
-	default:
-		return rabbitmq.NackDiscard
+		switch event.Type {
+		case hbit.TASKDONE:
+			var payload task.TaskDonePayload
+			err := json.Unmarshal(event.Payload, &payload)
+			if err != nil {
+				return rabbitmq.NackDiscard
+			}
+			if err := svc.HandleTaskCompleted(event.UserId, payload.Difficulty); err != nil {
+				return rabbitmq.NackDiscard
+			}
+			return rabbitmq.Ack
+		default:
+			return rabbitmq.NackDiscard
+		}
 	}
-
 }

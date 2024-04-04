@@ -1,37 +1,28 @@
 package rpg
 
 import (
-	"github.com/SQUASHD/hbit"
 	"github.com/SQUASHD/hbit/rpg/rpgdb"
+	"github.com/SQUASHD/hbit/task"
 )
 
-type TaskDifficulty string
-
 const (
-	EASY   TaskDifficulty = "easy"
-	MEDIUM TaskDifficulty = "medium"
-	HARD   TaskDifficulty = "hard"
-	EPIC   TaskDifficulty = "epic"
-
 	BASE_GOLD_REWARD = 10
 	BASE_EXP_REWARD  = 10
 	BASE_MANA_REWARD = 10
 	BASE_DMG_DONE    = 10
 )
 
-func generateEventId() string {
-	return hbit.NewEventIdWithTimestamp("rpg")
-}
-
-func calculateDamageDone(char rpgdb.CharacterState, taskDifficulty TaskDifficulty) int {
+func calculateDamageDone(char rpgdb.CharacterState, taskDifficulty task.TaskDifficulty) int {
 	var difficultyMultiplier float64
 	switch taskDifficulty {
-	case EASY:
+	case task.EASY:
 		difficultyMultiplier = 0.5
-	case MEDIUM:
+	case task.MEDIUM:
 		difficultyMultiplier = 1
-	case HARD:
+	case task.HARD:
 		difficultyMultiplier = 1.5
+	case task.EPIC:
+		difficultyMultiplier = 2
 	default:
 		difficultyMultiplier = 1
 
@@ -44,17 +35,19 @@ func calculateDamageDone(char rpgdb.CharacterState, taskDifficulty TaskDifficult
 
 }
 
-func determineReward(char rpgdb.CharacterState, taskDifficulty TaskDifficulty) TaskRewardPayload {
-	var difficultyMultiplier int
+func determineReward(char rpgdb.CharacterState, taskDifficulty task.TaskDifficulty) TaskRewardPayload {
+	var difficultyMultiplier float64
 	switch taskDifficulty {
-	case EASY:
+	case task.EASY:
+		difficultyMultiplier = 0.5
+	case task.MEDIUM:
 		difficultyMultiplier = 1
-	case MEDIUM:
+	case task.HARD:
+		difficultyMultiplier = 1.5
+	case task.EPIC:
 		difficultyMultiplier = 2
-	case HARD:
-		difficultyMultiplier = 3
 	default:
-		difficultyMultiplier = 4
+		difficultyMultiplier = 1
 	}
 
 	dexModifier := 1 + (float64(char.Dexterity) / 100)

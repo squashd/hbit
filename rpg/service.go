@@ -7,12 +7,13 @@ import (
 
 	"github.com/SQUASHD/hbit"
 	"github.com/SQUASHD/hbit/rpg/rpgdb"
+	"github.com/SQUASHD/hbit/task"
 	"github.com/wagslane/go-rabbitmq"
 )
 
 type (
 	EventService interface {
-		HandleTaskCompleted(userId string, difficulty TaskDifficulty) error
+		HandleTaskCompleted(userId hbit.UserId, difficulty task.TaskDifficulty) error
 		hbit.Publisher
 		hbit.UserDataHandler
 	}
@@ -56,19 +57,18 @@ func NewService(
 }
 
 func (s *rpgService) HandleTaskCompleted(
-	userId string,
-	difficulty TaskDifficulty,
+	userId hbit.UserId,
+	difficulty task.TaskDifficulty,
 ) error {
-	char, err := s.queries.ReadCharacter(context.Background(), userId)
+	char, err := s.queries.ReadCharacter(context.Background(), userId.String())
 	if err != nil {
 		return err
 	}
 
 	// TODO: check character's current quest and state
-
 	reward := determineReward(char, difficulty)
 	msg, err := hbit.NewEventMessage(
-		hbit.TaskRewardEvent,
+		hbit.RPGREWARD,
 		userId,
 		hbit.NewEventIdWithTimestamp("rpg"),
 		reward,

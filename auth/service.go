@@ -112,7 +112,7 @@ func validatePassword(password, confirmPassword string) []*hbit.Error {
 
 func convertUserFormToModel(form CreateUserForm, password string) authdb.CreateAuthParams {
 	return authdb.CreateAuthParams{
-		UserID:         hbit.NewUUID(),
+		UserID:         string(hbit.NewUUID()),
 		Username:       form.Username,
 		HashedPassword: password,
 	}

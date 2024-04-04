@@ -43,7 +43,6 @@ func main() {
 		log.Fatalf("cannot create rpg consumer: %s", err)
 	}
 	defer conn.Close()
-	eventHandler := events.NewRPGConsumerHandler(rpgSvc)
 
 	rpgRouter := http.NewRPGRouter(characterSvc, questSvc)
 	wrappedRouter := http.ChainMiddleware(
@@ -84,7 +83,7 @@ func main() {
 	go func() {
 		defer wg.Done()
 		if err := consumer.Run(
-			eventHandler.HandleEvents,
+			events.RPGConsumerHandler(rpgSvc),
 		); err != nil {
 			log.Fatalf("cannot start consuming: %s", err)
 		}
