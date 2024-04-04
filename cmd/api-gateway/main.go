@@ -45,7 +45,6 @@ func main() {
 		http.ChainMiddleware(
 			gateway,
 			http.CORSMiddleware,
-			http.LoggerMiddleware,
 		),
 		http.WithServerOptionsPortFromEnv("API_GATEWAY_PORT"),
 	)
@@ -63,6 +62,9 @@ func main() {
 
 		ctx, cancel := context.WithTimeout(context.Background(), server.IdleTimeout)
 		defer cancel()
+		if err := authSvc.Cleanup(); err != nil {
+			log.Fatalf("Auth service cleanup failure: %v", err)
+		}
 
 		if err := server.Shutdown(ctx); err != nil {
 			log.Fatalf("Server shutdown failure: %v", err)

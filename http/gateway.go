@@ -44,7 +44,7 @@ func SetUpAPIGateway(
 	gateway.Handle("/feats/", authMiddleware(http.StripPrefix("/feats", featsSvcProxy)))
 	gateway.Handle("/rpg/", authMiddleware(http.StripPrefix("/rpg", rpgSvcProxy)))
 	gateway.Handle("/tasks/", authMiddleware(http.StripPrefix("/tasks", taskSvcProxy)))
-	gateway.Handle("/update/", authMiddleware(http.StripPrefix("/update", updateSvcProxy)))
+	gateway.Handle("/updates/", authMiddleware(http.StripPrefix("/updates", updateSvcProxy)))
 
 	gateway.Handle("/auth/", http.StripPrefix("/auth", entry))
 
@@ -61,7 +61,8 @@ func getUserSvcProxyFromEnv() (*httputil.ReverseProxy, error) {
 		Director: func(r *http.Request) {
 			r.URL.Scheme = userSvcURL.Scheme
 			r.URL.Host = userSvcURL.Host
-		}}, nil
+		},
+	}, nil
 }
 
 func getFeatSvcProxyFromEnv() (*httputil.ReverseProxy, error) {
@@ -104,7 +105,7 @@ func getTaskSvcProxyFromEnv() (*httputil.ReverseProxy, error) {
 }
 
 func getUpdateSvcProxyFromEnv() (*httputil.ReverseProxy, error) {
-	updateSvcURL, err := url.Parse(os.Getenv("UPDATE_SVC_URL"))
+	updateSvcURL, err := url.Parse(os.Getenv("UPDATES_SVC_URL"))
 	if err != nil {
 		return nil, err
 	}
@@ -113,5 +114,7 @@ func getUpdateSvcProxyFromEnv() (*httputil.ReverseProxy, error) {
 		Director: func(r *http.Request) {
 			r.URL.Scheme = updateSvcURL.Scheme
 			r.URL.Host = updateSvcURL.Host
-		}}, nil
+		},
+	}, nil
+
 }

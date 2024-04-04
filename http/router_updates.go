@@ -23,7 +23,7 @@ func NewUpdatesRouter(s *updates.Service) *http.ServeMux {
 		}
 		s.RegisterConnection("1", conn)
 	})
-	r.HandleFunc("/send", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("GET /send", func(w http.ResponseWriter, r *http.Request) {
 		type Reward struct {
 			Gold int `json:"gold"`
 			Exp  int `json:"exp"`
