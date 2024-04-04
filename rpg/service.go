@@ -1,78 +1,86 @@
 package rpg
 
 import (
+	"context"
+	"database/sql"
 	"encoding/json"
-	"errors"
-	"fmt"
 
 	"github.com/SQUASHD/hbit"
-	"github.com/SQUASHD/hbit/rpg/character"
-	"github.com/SQUASHD/hbit/rpg/quest"
+	"github.com/SQUASHD/hbit/rpg/rpgdb"
 	"github.com/wagslane/go-rabbitmq"
 )
 
 type (
-	Service interface {
-		EventService
-	}
-
 	EventService interface {
-		HandleTaskCompleted(userId string) error
-		Publish(event hbit.EventMessage, routingKeys []string) error
+		HandleTaskCompleted(userId string, difficulty TaskDifficulty) error
+		hbit.Publisher
+		hbit.UserDataHandler
 	}
 	rpgService struct {
-		charSvc   character.CharacterService
-		questSvc  quest.QuestService
 		publisher *rabbitmq.Publisher
+		queries   *rpgdb.Queries
+		db        *sql.DB
 	}
 )
 
+// DeleteData implements EventService.
+func (s *rpgService) DeleteData(userId string) error {
+	tx, er := s.db.Begin()
+	if er != nil {
+		return &hbit.Error{Code: hbit.EINTERNAL, Message: "failed to start transaction"}
+	}
+	defer tx.Rollback()
+	qtx := s.queries.WithTx(tx)
+	err := qtx.DeleteUserData(context.Background(), userId)
+	if err != nil {
+		return err
+	}
+	err = tx.Commit()
+	if err != nil {
+		return &hbit.Error{Code: hbit.EINTERNAL, Message: "failed to commit transaction"}
+	}
+	return nil
+
+}
+
 func NewService(
-	charSvc character.CharacterService,
-	questSvc quest.QuestService,
 	publisher *rabbitmq.Publisher,
+	queries *rpgdb.Queries,
+	db *sql.DB,
 ) EventService {
 	return &rpgService{
-		charSvc:   charSvc,
-		questSvc:  questSvc,
 		publisher: publisher,
+		queries:   queries,
+		db:        db,
 	}
 }
 
-func (s *rpgService) HandleTaskCompleted(userId string) error {
-
-	levelUpData := CharacterLevelUpPayload{
-		Level: 69,
-	}
-	levelMsg, err := hbit.NewEventMessage(
-		hbit.CharacterLevelUpEvent,
-		userId,
-		hbit.NewUUID(),
-		levelUpData,
-	)
-	err = s.Publish(levelMsg, []string{"rpg.levelup"})
+func (s *rpgService) HandleTaskCompleted(
+	userId string,
+	difficulty TaskDifficulty,
+) error {
+	char, err := s.queries.ReadCharacter(context.Background(), userId)
 	if err != nil {
 		return err
 	}
 
-	awardData := TaskRewardPayload{
-		Gold: 50,
-		Exp:  100,
-		Mana: 10,
-	}
-	rewardMsg, err := hbit.NewEventMessage(
-		hbit.CharacterLevelUpEvent,
+	// TODO: check character's current quest and state
+
+	reward := determineReward(char, difficulty)
+	msg, err := hbit.NewEventMessage(
+		hbit.TaskRewardEvent,
 		userId,
-		hbit.NewUUID(),
-		awardData,
+		hbit.NewEventIdWithTimestamp("rpg"),
+		reward,
 	)
-	err = s.Publish(rewardMsg, []string{"rpg.rewards"})
 	if err != nil {
 		return err
 	}
 
-	fmt.Println("Published rewards event")
-
+	err = s.Publish(msg, []string{"task.reward"})
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -93,17 +101,6 @@ func (s *rpgService) Publish(event hbit.EventMessage, routingKeys []string) erro
 	return nil
 }
 
-func (s *rpgService) CleanUp() error {
-	var errs []error
-	if err := s.charSvc.CleanUp(); err != nil {
-		errs = append(errs, err)
-	}
-	if err := s.questSvc.CleanUp(); err != nil {
-		errs = append(errs, err)
-	}
+func (s *rpgService) CleanUp() {
 	s.publisher.Close()
-	if len(errs) > 0 {
-		return errors.Join(errs...)
-	}
-	return nil
 }

@@ -33,7 +33,7 @@ type rpgConsumerHandler struct {
 	rpgSvc rpg.EventService
 }
 
-func NewRPGConsumerHandler(svc rpg.Service) *rpgConsumerHandler {
+func NewRPGConsumerHandler(svc rpg.EventService) *rpgConsumerHandler {
 	return &rpgConsumerHandler{rpgSvc: svc}
 }
 
@@ -43,8 +43,9 @@ func (h *rpgConsumerHandler) HandleEvents(d rabbitmq.Delivery) rabbitmq.Action {
 		return rabbitmq.NackDiscard
 	}
 	switch event.Type {
-	case hbit.TaskCompleteEvent:
-		if err := h.rpgSvc.HandleTaskCompleted(event.UserId); err != nil {
+	case hbit.TASKDONE:
+		// TODO: Handle task done event
+		if err := h.rpgSvc.HandleTaskCompleted(event.UserId, "1"); err != nil {
 			return rabbitmq.NackDiscard
 		}
 		return rabbitmq.Ack

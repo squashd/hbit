@@ -40,6 +40,10 @@ func (s *service) List(ctx context.Context, requestedById string) ([]DTO, error)
 }
 
 func (s *service) Create(ctx context.Context, form CreateTaskForm) (DTO, error) {
+	if form.CreateTaskParams.UserID != form.RequestedById {
+		return DTO{}, &hbit.Error{Code: hbit.EUNAUTHORIZED, Message: "unauthorized"}
+	}
+
 	task, err := s.queries.CreateTask(ctx, form.CreateTaskParams)
 	if err != nil {
 		return DTO{}, err

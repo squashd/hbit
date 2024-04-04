@@ -1,45 +1,73 @@
 package rpg
 
-import "github.com/SQUASHD/hbit/rpg/rpgdb"
-
-func calculateExperienceToNextLevel(level int) int {
-	return 100 * level
-}
+import (
+	"github.com/SQUASHD/hbit"
+	"github.com/SQUASHD/hbit/rpg/rpgdb"
+)
 
 type TaskDifficulty string
 
 const (
-	Easy   TaskDifficulty = "easy"
-	Medium TaskDifficulty = "medium"
-	Hard   TaskDifficulty = "hard"
+	EASY   TaskDifficulty = "easy"
+	MEDIUM TaskDifficulty = "medium"
+	HARD   TaskDifficulty = "hard"
+	EPIC   TaskDifficulty = "epic"
+
+	BASE_GOLD_REWARD = 10
+	BASE_EXP_REWARD  = 10
+	BASE_MANA_REWARD = 10
+	BASE_DMG_DONE    = 10
 )
 
-func calculateReward(character rpgdb.CharacterState, difficulty TaskDifficulty) int {
-	switch difficulty {
-	case Easy:
-		return 100
-	case Medium:
-		return 200
-	case Hard:
-		return 300
-	default:
-		return 0
-	}
+func generateEventId() string {
+	return hbit.NewEventIdWithTimestamp("rpg")
 }
 
-func getExperienceGain(difficulty TaskDifficulty) int {
-	switch difficulty {
-	case Easy:
-		return 10
-	case Medium:
-		return 20
-	case Hard:
-		return 30
+func calculateDamageDone(char rpgdb.CharacterState, taskDifficulty TaskDifficulty) int {
+	var difficultyMultiplier float64
+	switch taskDifficulty {
+	case EASY:
+		difficultyMultiplier = 0.5
+	case MEDIUM:
+		difficultyMultiplier = 1
+	case HARD:
+		difficultyMultiplier = 1.5
 	default:
-		return 0
+		difficultyMultiplier = 1
+
 	}
+	dexModifier := 1 + (float64(char.Dexterity) / 100)
+	strModifier := 1 + (float64(char.Strength) / 100)
+	levelModifier := 1 + (float64(char.CharacterLevel) / 100)
+
+	return int(float64(BASE_DMG_DONE) * dexModifier * strModifier * levelModifier * difficultyMultiplier)
+
 }
 
-func calculateRewardModifier(character rpgdb.CharacterState) float64 {
-	return 1.0 + (float64(character.CharacterLevel) * 0.1)
+func determineReward(char rpgdb.CharacterState, taskDifficulty TaskDifficulty) TaskRewardPayload {
+	var difficultyMultiplier int
+	switch taskDifficulty {
+	case EASY:
+		difficultyMultiplier = 1
+	case MEDIUM:
+		difficultyMultiplier = 2
+	case HARD:
+		difficultyMultiplier = 3
+	default:
+		difficultyMultiplier = 4
+	}
+
+	dexModifier := 1 + (float64(char.Dexterity) / 100)
+	levelModifier := 1 + (float64(char.CharacterLevel) / 100)
+	intModifier := 1 + (float64(char.Intelligence) / 100)
+
+	goldReward := int(float64(BASE_GOLD_REWARD) * dexModifier * levelModifier * float64(difficultyMultiplier))
+	expReward := int(float64(BASE_EXP_REWARD) * intModifier * levelModifier * float64(difficultyMultiplier))
+	manaReward := int(float64(BASE_MANA_REWARD) * intModifier * levelModifier * float64(difficultyMultiplier))
+
+	return TaskRewardPayload{
+		Gold: goldReward,
+		Exp:  expReward,
+		Mana: manaReward,
+	}
 }

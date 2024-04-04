@@ -7,18 +7,18 @@ import (
 )
 
 const (
-	RepeatDaily   RepeatType = "daily"
-	RepeatWeekly  RepeatType = "weekly"
-	RepeatMonthly RepeatType = "monthly"
-	RepeatYearly  RepeatType = "yearly"
+	DAILY   RepeatType = "daily"
+	WEEKLY  RepeatType = "weekly"
+	MONTHLY RepeatType = "monthly"
+	YEARLY  RepeatType = "yearly"
 
-	Monday    Day = "m"
-	Tuesday   Day = "t"
-	Wednesday Day = "w"
-	Thursday  Day = "th"
-	Friday    Day = "f"
-	Saturday  Day = "sa"
-	Sunday    Day = "su"
+	MONDAY    Day = "m"
+	TUESDAY   Day = "t"
+	WEDNESDAY Day = "w"
+	THURSDAY  Day = "th"
+	FRIDAY    Day = "f"
+	SATURDAY  Day = "sa"
+	SUNDAY    Day = "su"
 )
 
 type (
@@ -27,7 +27,6 @@ type (
 
 	DTO struct {
 		ID        string    `json:"id"`
-		UserID    string    `json:"user_id"`
 		Title     string    `json:"title"`
 		Text      string    `json:"text"`
 		Data      string    `json:"data"`
@@ -40,7 +39,6 @@ type (
 func toDTO(task taskdb.Task) DTO {
 	return DTO{
 		ID:        task.ID,
-		UserID:    task.UserID,
 		Title:     task.Title,
 		Text:      task.Text,
 		TaskType:  task.TaskType,

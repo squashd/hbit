@@ -36,7 +36,7 @@ func main() {
 	}
 	defer conn.Close()
 
-	rpgSvc := rpg.NewService(characterSvc, questSvc, publisher)
+	rpgSvc := rpg.NewService(publisher, queries, db)
 
 	consumer, conn, err := events.NewRPGEventConsumer(rabbitmqUrl)
 	if err != nil {
