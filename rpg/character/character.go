@@ -8,16 +8,20 @@ import (
 
 type (
 	CharacterService interface {
-		List(ctx context.Context) ([]DTO, error)
-		UserCharacterService
+		CharacterManagement
+		AdminCharacterService
 		CleanUp() error
 	}
 
-	UserCharacterService interface {
+	CharacterManagement interface {
 		CreateCharacter(ctx context.Context, form CreateCharacterForm) (DTO, error)
 		GetCharacter(ctx context.Context, form ReadCharacterForm) (DTO, error)
 		UpdateCharacter(ctx context.Context, form UpdateCharacterForm) (DTO, error)
 		DeleteCharacter(ctx context.Context, form DeleteCharacterForm) error
+	}
+
+	AdminCharacterService interface {
+		List(ctx context.Context) ([]DTO, error)
 	}
 
 	CreateCharacterForm struct {
