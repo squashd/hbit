@@ -7,6 +7,7 @@ import (
 )
 
 type (
+	// Aggregate service for instantiation top level, should not be used directly
 	CharacterService interface {
 		CharacterManagement
 		AdminCharacterService

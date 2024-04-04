@@ -9,55 +9,9 @@ import (
 	"context"
 )
 
-const createItem = `-- name: CreateItem :one
-INSERT INTO
-    item (id, name, description, item_type, attributes)
-VALUES
-    (?, ?, ?, ?, ?) RETURNING id, name, description, item_type, attributes
-`
-
-type CreateItemParams struct {
-	ID          string  `json:"id"`
-	Name        string  `json:"name"`
-	Description string  `json:"description"`
-	ItemType    string  `json:"item_type"`
-	Attributes  *string `json:"attributes"`
-}
-
-func (q *Queries) CreateItem(ctx context.Context, arg CreateItemParams) (Item, error) {
-	row := q.db.QueryRowContext(ctx, createItem,
-		arg.ID,
-		arg.Name,
-		arg.Description,
-		arg.ItemType,
-		arg.Attributes,
-	)
-	var i Item
-	err := row.Scan(
-		&i.ID,
-		&i.Name,
-		&i.Description,
-		&i.ItemType,
-		&i.Attributes,
-	)
-	return i, err
-}
-
-const deleteItem = `-- name: DeleteItem :exec
-DELETE FROM
-    item
-WHERE
-    id = ?
-`
-
-func (q *Queries) DeleteItem(ctx context.Context, id string) error {
-	_, err := q.db.ExecContext(ctx, deleteItem, id)
-	return err
-}
-
 const listItems = `-- name: ListItems :many
 SELECT
-    id, name, description, item_type, attributes
+    item_id, name, description, href, str_boost, dex_boost, int_boost, slot, created_at, updated_at
 FROM
     item
 `
@@ -72,11 +26,16 @@ func (q *Queries) ListItems(ctx context.Context) ([]Item, error) {
 	for rows.Next() {
 		var i Item
 		if err := rows.Scan(
-			&i.ID,
+			&i.ItemID,
 			&i.Name,
 			&i.Description,
-			&i.ItemType,
-			&i.Attributes,
+			&i.Href,
+			&i.StrBoost,
+			&i.DexBoost,
+			&i.IntBoost,
+			&i.Slot,
+			&i.CreatedAt,
+			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -89,65 +48,4 @@ func (q *Queries) ListItems(ctx context.Context) ([]Item, error) {
 		return nil, err
 	}
 	return items, nil
-}
-
-const readItem = `-- name: ReadItem :one
-SELECT
-    id, name, description, item_type, attributes
-FROM
-    item
-WHERE
-    id = ?
-`
-
-func (q *Queries) ReadItem(ctx context.Context, id string) (Item, error) {
-	row := q.db.QueryRowContext(ctx, readItem, id)
-	var i Item
-	err := row.Scan(
-		&i.ID,
-		&i.Name,
-		&i.Description,
-		&i.ItemType,
-		&i.Attributes,
-	)
-	return i, err
-}
-
-const updateItem = `-- name: UpdateItem :one
-UPDATE
-    item
-SET
-    name = ?,
-    description = ?,
-    item_type = ?,
-    attributes = ?
-WHERE
-    id = ? RETURNING id, name, description, item_type, attributes
-`
-
-type UpdateItemParams struct {
-	Name        string  `json:"name"`
-	Description string  `json:"description"`
-	ItemType    string  `json:"item_type"`
-	Attributes  *string `json:"attributes"`
-	ID          string  `json:"id"`
-}
-
-func (q *Queries) UpdateItem(ctx context.Context, arg UpdateItemParams) (Item, error) {
-	row := q.db.QueryRowContext(ctx, updateItem,
-		arg.Name,
-		arg.Description,
-		arg.ItemType,
-		arg.Attributes,
-		arg.ID,
-	)
-	var i Item
-	err := row.Scan(
-		&i.ID,
-		&i.Name,
-		&i.Description,
-		&i.ItemType,
-		&i.Attributes,
-	)
-	return i, err
 }

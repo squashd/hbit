@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 
+	"github.com/SQUASHD/hbit"
 	"github.com/SQUASHD/hbit/rpg/rpgdb"
 )
 
@@ -34,34 +35,21 @@ func (s *service) ListQuests(ctx context.Context, userId string) ([]QuestDTO, er
 }
 
 func (s *service) ReadQuest(ctx context.Context, id string) (QuestDTO, error) {
-	quest, err := s.queries.ReadQuest(ctx, id)
-	if err != nil {
-		return QuestDTO{}, err
-	}
-
-	return questToDTO(quest), nil
+	return QuestDTO{}, &hbit.Error{Code: hbit.EINTERNAL, Message: "Not implemented"}
 }
 
-func (s *service) CreateQuest(ctx context.Context, data rpgdb.CreateQuestParams) (QuestDTO, error) {
-	quest, err := s.queries.CreateQuest(ctx, data)
-	if err != nil {
-		return QuestDTO{}, err
-	}
-
-	return questToDTO(quest), nil
+func (s *service) CreateQuest(ctx context.Context, data any) (QuestDTO, error) {
+	return QuestDTO{}, &hbit.Error{Code: hbit.EINTERNAL, Message: "Not implemented"}
 }
 
-func (s *service) UpdateQuest(ctx context.Context, data rpgdb.UpdateQuestParams) (QuestDTO, error) {
-	quest, err := s.queries.UpdateQuest(ctx, data)
-	if err != nil {
-		return QuestDTO{}, err
-	}
+func (s *service) UpdateQuest(ctx context.Context, data any) (QuestDTO, error) {
+	return QuestDTO{}, &hbit.Error{Code: hbit.EINTERNAL, Message: "Not implemented"}
 
-	return questToDTO(quest), nil
 }
 
 func (s *service) DeleteQuest(ctx context.Context, id string) error {
-	return s.queries.DeleteQuest(ctx, id)
+	return &hbit.Error{Code: hbit.EINTERNAL, Message: "Not implemented"}
+
 }
 
 func (s *service) CleanUp() error {
@@ -69,5 +57,5 @@ func (s *service) CleanUp() error {
 }
 
 func (s *service) DeleteUserQuests(userId string) error {
-	panic("not implemented")
+	return &hbit.Error{Code: hbit.EINTERNAL, Message: "Not implemented"}
 }

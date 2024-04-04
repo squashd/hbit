@@ -105,6 +105,43 @@ SELECT
 FROM
     user_quest_backup;
 
+ALTER TABLE
+    item RENAME TO item_backup;
+
+CREATE TABLE IF NOT EXISTS item (
+    item_id TEXT PRIMARY KEY,
+    name TEXT NOT NULL DEFAULT '',
+    description TEXT NOT NULL DEFAULT '',
+    href TEXT NOT NULL DEFAULT '',
+    str_boost INTEGER NOT NULL DEFAULT 0,
+    dex_boost INTEGER NOT NULL DEFAULT 0,
+    int_boost INTEGER NOT NULL DEFAULT 0,
+    slot TEXT NOT NULL DEFAULT 'none',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO
+    item (
+        item_id,
+        name,
+        description,
+        str_boost,
+        dex_boost,
+        int_boost,
+        slot
+    )
+SELECT
+    id,
+    name,
+    description,
+    0 AS str_boost,
+    0 AS dex_boost,
+    0 AS int_boost,
+    item_type AS slot
+FROM
+    item_backup;
+
 -- +goose Down
 ALTER TABLE
     character_backup RENAME TO character;
@@ -171,3 +208,36 @@ FROM
     user_quest_backup_temp;
 
 DROP TABLE IF EXISTS user_quest_backup_temp;
+
+ALTER TABLE
+    item RENAME TO item_temp;
+
+CREATE TABLE IF NOT EXISTS item (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL DEFAULT '',
+    description TEXT NOT NULL DEFAULT '',
+    attributes TEXT NOT NULL DEFAULT '{}',
+    requirements TEXT NOT NULL DEFAULT '{}'
+);
+
+INSERT INTO
+    item (id, slot)
+SELECT
+    id,
+    slot,
+    JSON_OBJECT(
+        'str_boost',
+        str_boost,
+        'dex_boost',
+        dex_boost,
+        'int_boost',
+        int_boost
+    ) AS attributes,
+    '{}' AS requirements
+FROM
+    item_temp;
+
+ALTER TABLE
+    item_backup RENAME TO item;
+
+DROP TABLE item_temp;

@@ -2,20 +2,21 @@ package quest
 
 import (
 	"context"
+	"time"
 
 	"github.com/SQUASHD/hbit/rpg/rpgdb"
 )
 
 type (
+	// Top level service for instantiation
 	QuestService interface {
-		UserQuestService
+		QuestManagement
 		EventQuestService
 		InternalQuestService
 	}
 
-	UserQuestService interface {
+	QuestManagement interface {
 		ListQuests(ctx context.Context, userId string) ([]QuestDTO, error)
-		ReadQuest(ctx context.Context, id string) (QuestDTO, error)
 	}
 
 	EventQuestService interface {
@@ -23,28 +24,36 @@ type (
 	}
 
 	InternalQuestService interface {
-		UpdateQuest(ctx context.Context, data rpgdb.UpdateQuestParams) (QuestDTO, error)
-		CreateQuest(ctx context.Context, data rpgdb.CreateQuestParams) (QuestDTO, error)
-		DeleteQuest(ctx context.Context, id string) error
 		CleanUp() error
 	}
 
 	QuestDTO struct {
-		ID           string  `json:"id"`
-		Title        string  `json:"title"`
-		Description  string  `json:"description"`
-		Requirements *string `json:"requirements"`
-		Rewards      *string `json:"rewards"`
+		QuestID     string    `json:"quest_id"`
+		QuestType   string    `json:"quest_type"`
+		Description string    `json:"description"`
+		Title       string    `json:"title"`
+		Details     string    `json:"details"`
+		UpdatedAt   time.Time `json:"updated_at"`
+	}
+
+	BossQuestDetails struct {
+		BossID string `json:"boss_id"`
+	}
+
+	ItemQuestDetails struct {
+		ItemID      string `json:"item_id"`
+		DropsNeeded int    `json:"drops_needed"`
 	}
 )
 
 func questToDTO(quest rpgdb.Quest) QuestDTO {
 	return QuestDTO{
-		ID:           quest.ID,
-		Title:        quest.Title,
-		Description:  quest.Description,
-		Requirements: quest.Requirements,
-		Rewards:      quest.Rewards,
+		QuestID:     quest.QuestID,
+		QuestType:   quest.QuestType,
+		Description: quest.Description,
+		Title:       quest.Title,
+		Details:     quest.Details,
+		UpdatedAt:   quest.UpdatedAt,
 	}
 }
 

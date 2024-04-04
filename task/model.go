@@ -22,9 +22,6 @@ const (
 )
 
 type (
-	Task  = taskdb.Task
-	Tasks = []Task
-
 	RepeatType string
 	Day        string
 
@@ -40,7 +37,7 @@ type (
 	}
 )
 
-func toDTO(task Task) DTO {
+func toDTO(task taskdb.Task) DTO {
 	return DTO{
 		ID:        task.ID,
 		UserID:    task.UserID,
@@ -52,7 +49,7 @@ func toDTO(task Task) DTO {
 	}
 }
 
-func toDTOs(tasks Tasks) []DTO {
+func toDTOs(tasks []taskdb.Task) []DTO {
 	tasksDTO := make([]DTO, len(tasks))
 	for i, task := range tasks {
 		tasksDTO[i] = toDTO(task)

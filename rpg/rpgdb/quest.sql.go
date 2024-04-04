@@ -9,55 +9,9 @@ import (
 	"context"
 )
 
-const createQuest = `-- name: CreateQuest :one
-INSERT INTO
-    quest (id, title, description, requirements, rewards)
-VALUES
-    (?, ?, ?, ?, ?) RETURNING id, title, description, requirements, rewards
-`
-
-type CreateQuestParams struct {
-	ID           string  `json:"id"`
-	Title        string  `json:"title"`
-	Description  string  `json:"description"`
-	Requirements *string `json:"requirements"`
-	Rewards      *string `json:"rewards"`
-}
-
-func (q *Queries) CreateQuest(ctx context.Context, arg CreateQuestParams) (Quest, error) {
-	row := q.db.QueryRowContext(ctx, createQuest,
-		arg.ID,
-		arg.Title,
-		arg.Description,
-		arg.Requirements,
-		arg.Rewards,
-	)
-	var i Quest
-	err := row.Scan(
-		&i.ID,
-		&i.Title,
-		&i.Description,
-		&i.Requirements,
-		&i.Rewards,
-	)
-	return i, err
-}
-
-const deleteQuest = `-- name: DeleteQuest :exec
-DELETE FROM
-    quest
-WHERE
-    id = ?
-`
-
-func (q *Queries) DeleteQuest(ctx context.Context, id string) error {
-	_, err := q.db.ExecContext(ctx, deleteQuest, id)
-	return err
-}
-
 const listQuests = `-- name: ListQuests :many
 SELECT
-    id, title, description, requirements, rewards
+    quest_id, quest_type, description, title, details, created_at, updated_at
 FROM
     quest
 `
@@ -72,11 +26,13 @@ func (q *Queries) ListQuests(ctx context.Context) ([]Quest, error) {
 	for rows.Next() {
 		var i Quest
 		if err := rows.Scan(
-			&i.ID,
-			&i.Title,
+			&i.QuestID,
+			&i.QuestType,
 			&i.Description,
-			&i.Requirements,
-			&i.Rewards,
+			&i.Title,
+			&i.Details,
+			&i.CreatedAt,
+			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -89,65 +45,4 @@ func (q *Queries) ListQuests(ctx context.Context) ([]Quest, error) {
 		return nil, err
 	}
 	return items, nil
-}
-
-const readQuest = `-- name: ReadQuest :one
-SELECT
-    id, title, description, requirements, rewards
-FROM
-    quest
-WHERE
-    id = ?
-`
-
-func (q *Queries) ReadQuest(ctx context.Context, id string) (Quest, error) {
-	row := q.db.QueryRowContext(ctx, readQuest, id)
-	var i Quest
-	err := row.Scan(
-		&i.ID,
-		&i.Title,
-		&i.Description,
-		&i.Requirements,
-		&i.Rewards,
-	)
-	return i, err
-}
-
-const updateQuest = `-- name: UpdateQuest :one
-UPDATE
-    quest
-SET
-    title = ?,
-    description = ?,
-    requirements = ?,
-    rewards = ?
-WHERE
-    id = ? RETURNING id, title, description, requirements, rewards
-`
-
-type UpdateQuestParams struct {
-	Title        string  `json:"title"`
-	Description  string  `json:"description"`
-	Requirements *string `json:"requirements"`
-	Rewards      *string `json:"rewards"`
-	ID           string  `json:"id"`
-}
-
-func (q *Queries) UpdateQuest(ctx context.Context, arg UpdateQuestParams) (Quest, error) {
-	row := q.db.QueryRowContext(ctx, updateQuest,
-		arg.Title,
-		arg.Description,
-		arg.Requirements,
-		arg.Rewards,
-		arg.ID,
-	)
-	var i Quest
-	err := row.Scan(
-		&i.ID,
-		&i.Title,
-		&i.Description,
-		&i.Requirements,
-		&i.Rewards,
-	)
-	return i, err
 }

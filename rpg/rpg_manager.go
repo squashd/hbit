@@ -14,7 +14,7 @@ const (
 	Hard   TaskDifficulty = "hard"
 )
 
-func calculateReward(character rpgdb.Character, difficulty TaskDifficulty) int {
+func calculateReward(character rpgdb.CharacterState, difficulty TaskDifficulty) int {
 	switch difficulty {
 	case Easy:
 		return 100
@@ -40,6 +40,6 @@ func getExperienceGain(difficulty TaskDifficulty) int {
 	}
 }
 
-func calculateRewardModifier(character rpgdb.Character) float64 {
+func calculateRewardModifier(character rpgdb.CharacterState) float64 {
 	return 1.0 + (float64(character.CharacterLevel) * 0.1)
 }

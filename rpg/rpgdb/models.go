@@ -4,7 +4,11 @@
 
 package rpgdb
 
-type Character struct {
+import (
+	"time"
+)
+
+type CharacterBackup struct {
 	UserID         string `json:"user_id"`
 	ClassID        string `json:"class_id"`
 	CharacterLevel int64  `json:"character_level"`
@@ -22,7 +26,34 @@ type CharacterClass struct {
 	Description string `json:"description"`
 }
 
+type CharacterState struct {
+	UserID         string    `json:"user_id"`
+	ClassID        string    `json:"class_id"`
+	CharacterLevel int64     `json:"character_level"`
+	Experience     int64     `json:"experience"`
+	Health         int64     `json:"health"`
+	Mana           int64     `json:"mana"`
+	Strength       int64     `json:"strength"`
+	Dexterity      int64     `json:"dexterity"`
+	Intelligence   int64     `json:"intelligence"`
+	EventID        string    `json:"event_id"`
+	Timestamp      time.Time `json:"timestamp"`
+}
+
 type Item struct {
+	ItemID      string    `json:"item_id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	Href        string    `json:"href"`
+	StrBoost    int64     `json:"str_boost"`
+	DexBoost    int64     `json:"dex_boost"`
+	IntBoost    int64     `json:"int_boost"`
+	Slot        string    `json:"slot"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+type ItemBackup struct {
 	ID          string  `json:"id"`
 	Name        string  `json:"name"`
 	Description string  `json:"description"`
@@ -31,6 +62,16 @@ type Item struct {
 }
 
 type Quest struct {
+	QuestID     string    `json:"quest_id"`
+	QuestType   string    `json:"quest_type"`
+	Description string    `json:"description"`
+	Title       string    `json:"title"`
+	Details     string    `json:"details"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+type QuestBackup struct {
 	ID           string  `json:"id"`
 	Title        string  `json:"title"`
 	Description  string  `json:"description"`
@@ -45,6 +86,15 @@ type QuestItem struct {
 }
 
 type UserQuest struct {
+	UserID    string    `json:"user_id"`
+	QuestID   string    `json:"quest_id"`
+	Completed bool      `json:"completed"`
+	Timestamp time.Time `json:"timestamp"`
+	EventID   string    `json:"event_id"`
+	Details   string    `json:"details"`
+}
+
+type UserQuestBackup struct {
 	UserID    string `json:"user_id"`
 	QuestID   string `json:"quest_id"`
 	Completed bool   `json:"completed"`

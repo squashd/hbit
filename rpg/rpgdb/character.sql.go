@@ -11,19 +11,56 @@ import (
 
 const createCharacter = `-- name: CreateCharacter :one
 INSERT INTO
-    character (user_id, class_id)
+    character_state (
+        user_id,
+        class_id,
+        character_level,
+        experience,
+        health,
+        mana,
+        strength,
+        dexterity,
+        intelligence
+    )
 VALUES
-    (?, ?) RETURNING user_id, class_id, character_level, experience, health, mana, strength, dexterity, intelligence
+    (
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?
+    ) RETURNING user_id, class_id, character_level, experience, health, mana, strength, dexterity, intelligence, event_id, timestamp
 `
 
 type CreateCharacterParams struct {
-	UserID  string `json:"user_id"`
-	ClassID string `json:"class_id"`
+	UserID         string `json:"user_id"`
+	ClassID        string `json:"class_id"`
+	CharacterLevel int64  `json:"character_level"`
+	Experience     int64  `json:"experience"`
+	Health         int64  `json:"health"`
+	Mana           int64  `json:"mana"`
+	Strength       int64  `json:"strength"`
+	Dexterity      int64  `json:"dexterity"`
+	Intelligence   int64  `json:"intelligence"`
 }
 
-func (q *Queries) CreateCharacter(ctx context.Context, arg CreateCharacterParams) (Character, error) {
-	row := q.db.QueryRowContext(ctx, createCharacter, arg.UserID, arg.ClassID)
-	var i Character
+func (q *Queries) CreateCharacter(ctx context.Context, arg CreateCharacterParams) (CharacterState, error) {
+	row := q.db.QueryRowContext(ctx, createCharacter,
+		arg.UserID,
+		arg.ClassID,
+		arg.CharacterLevel,
+		arg.Experience,
+		arg.Health,
+		arg.Mana,
+		arg.Strength,
+		arg.Dexterity,
+		arg.Intelligence,
+	)
+	var i CharacterState
 	err := row.Scan(
 		&i.UserID,
 		&i.ClassID,
@@ -34,13 +71,15 @@ func (q *Queries) CreateCharacter(ctx context.Context, arg CreateCharacterParams
 		&i.Strength,
 		&i.Dexterity,
 		&i.Intelligence,
+		&i.EventID,
+		&i.Timestamp,
 	)
 	return i, err
 }
 
 const deleteCharacter = `-- name: DeleteCharacter :exec
 DELETE FROM
-    character
+    character_state
 WHERE
     user_id = ?
 `
@@ -50,100 +89,22 @@ func (q *Queries) DeleteCharacter(ctx context.Context, userID string) error {
 	return err
 }
 
-const getUsersCharacters = `-- name: GetUsersCharacters :many
-SELECT
-    user_id, class_id, character_level, experience, health, mana, strength, dexterity, intelligence
-FROM
-    character
-WHERE
-    user_id = ?
-`
-
-func (q *Queries) GetUsersCharacters(ctx context.Context, userID string) ([]Character, error) {
-	rows, err := q.db.QueryContext(ctx, getUsersCharacters, userID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Character
-	for rows.Next() {
-		var i Character
-		if err := rows.Scan(
-			&i.UserID,
-			&i.ClassID,
-			&i.CharacterLevel,
-			&i.Experience,
-			&i.Health,
-			&i.Mana,
-			&i.Strength,
-			&i.Dexterity,
-			&i.Intelligence,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listCharacters = `-- name: ListCharacters :many
-SELECT
-    user_id, class_id, character_level, experience, health, mana, strength, dexterity, intelligence
-FROM
-    character
-`
-
-func (q *Queries) ListCharacters(ctx context.Context) ([]Character, error) {
-	rows, err := q.db.QueryContext(ctx, listCharacters)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Character
-	for rows.Next() {
-		var i Character
-		if err := rows.Scan(
-			&i.UserID,
-			&i.ClassID,
-			&i.CharacterLevel,
-			&i.Experience,
-			&i.Health,
-			&i.Mana,
-			&i.Strength,
-			&i.Dexterity,
-			&i.Intelligence,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const readCharacter = `-- name: ReadCharacter :one
 SELECT
-    user_id, class_id, character_level, experience, health, mana, strength, dexterity, intelligence
+    user_id, class_id, character_level, experience, health, mana, strength, dexterity, intelligence, event_id, timestamp
 FROM
-    character
+    character_state
 WHERE
     user_id = ?
+ORDER BY
+    timestamp DESC
+LIMIT
+    1
 `
 
-func (q *Queries) ReadCharacter(ctx context.Context, userID string) (Character, error) {
+func (q *Queries) ReadCharacter(ctx context.Context, userID string) (CharacterState, error) {
 	row := q.db.QueryRowContext(ctx, readCharacter, userID)
-	var i Character
+	var i CharacterState
 	err := row.Scan(
 		&i.UserID,
 		&i.ClassID,
@@ -154,27 +115,41 @@ func (q *Queries) ReadCharacter(ctx context.Context, userID string) (Character, 
 		&i.Strength,
 		&i.Dexterity,
 		&i.Intelligence,
+		&i.EventID,
+		&i.Timestamp,
 	)
 	return i, err
 }
 
 const updateCharacter = `-- name: UpdateCharacter :one
-UPDATE
-    character
-SET
-    class_id = ?,
-    character_level = ?,
-    experience = ?,
-    health = ?,
-    mana = ?,
-    strength = ?,
-    dexterity = ?,
-    intelligence = ?
-WHERE
-    user_id = ? RETURNING user_id, class_id, character_level, experience, health, mana, strength, dexterity, intelligence
+INSERT INTO
+    character_state (
+        user_id,
+        class_id,
+        character_level,
+        experience,
+        health,
+        mana,
+        strength,
+        dexterity,
+        intelligence
+    )
+VALUES
+    (
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?
+    ) RETURNING user_id, class_id, character_level, experience, health, mana, strength, dexterity, intelligence, event_id, timestamp
 `
 
 type UpdateCharacterParams struct {
+	UserID         string `json:"user_id"`
 	ClassID        string `json:"class_id"`
 	CharacterLevel int64  `json:"character_level"`
 	Experience     int64  `json:"experience"`
@@ -183,11 +158,11 @@ type UpdateCharacterParams struct {
 	Strength       int64  `json:"strength"`
 	Dexterity      int64  `json:"dexterity"`
 	Intelligence   int64  `json:"intelligence"`
-	UserID         string `json:"user_id"`
 }
 
-func (q *Queries) UpdateCharacter(ctx context.Context, arg UpdateCharacterParams) (Character, error) {
+func (q *Queries) UpdateCharacter(ctx context.Context, arg UpdateCharacterParams) (CharacterState, error) {
 	row := q.db.QueryRowContext(ctx, updateCharacter,
+		arg.UserID,
 		arg.ClassID,
 		arg.CharacterLevel,
 		arg.Experience,
@@ -196,9 +171,8 @@ func (q *Queries) UpdateCharacter(ctx context.Context, arg UpdateCharacterParams
 		arg.Strength,
 		arg.Dexterity,
 		arg.Intelligence,
-		arg.UserID,
 	)
-	var i Character
+	var i CharacterState
 	err := row.Scan(
 		&i.UserID,
 		&i.ClassID,
@@ -209,6 +183,8 @@ func (q *Queries) UpdateCharacter(ctx context.Context, arg UpdateCharacterParams
 		&i.Strength,
 		&i.Dexterity,
 		&i.Intelligence,
+		&i.EventID,
+		&i.Timestamp,
 	)
 	return i, err
 }

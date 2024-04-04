@@ -1,48 +1,69 @@
--- name: ListCharacters :many
-SELECT
-    *
-FROM
-    character;
-
 -- name: CreateCharacter :one
 INSERT INTO
-    character (user_id, class_id)
+    character_state (
+        user_id,
+        class_id,
+        character_level,
+        experience,
+        health,
+        mana,
+        strength,
+        dexterity,
+        intelligence
+    )
 VALUES
-    (?, ?) RETURNING *;
+    (
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?
+    ) RETURNING *;
 
 -- name: ReadCharacter :one
 SELECT
     *
 FROM
-    character
+    character_state
 WHERE
-    user_id = ?;
+    user_id = ?
+ORDER BY
+    timestamp DESC
+LIMIT
+    1;
 
 -- name: UpdateCharacter :one
-UPDATE
-    character
-SET
-    class_id = ?,
-    character_level = ?,
-    experience = ?,
-    health = ?,
-    mana = ?,
-    strength = ?,
-    dexterity = ?,
-    intelligence = ?
-WHERE
-    user_id = ? RETURNING *;
+INSERT INTO
+    character_state (
+        user_id,
+        class_id,
+        character_level,
+        experience,
+        health,
+        mana,
+        strength,
+        dexterity,
+        intelligence
+    )
+VALUES
+    (
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?
+    ) RETURNING *;
 
 -- name: DeleteCharacter :exec
 DELETE FROM
-    character
-WHERE
-    user_id = ?;
-
--- name: GetUsersCharacters :many
-SELECT
-    *
-FROM
-    character
+    character_state
 WHERE
     user_id = ?;

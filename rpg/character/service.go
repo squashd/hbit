@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 
+	"github.com/SQUASHD/hbit"
 	"github.com/SQUASHD/hbit/rpg/rpgdb"
 )
 
@@ -25,14 +26,7 @@ func NewService(
 }
 
 func (s *service) List(ctx context.Context) ([]DTO, error) {
-	characters, err := s.queries.ListCharacters(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	dtos := charactersToDtos(characters)
-
-	return dtos, nil
+	return []DTO{}, &hbit.Error{Code: hbit.EINTERNAL, Message: "Not implemented"}
 }
 
 func (s *service) CreateCharacter(ctx context.Context, form CreateCharacterForm) (DTO, error) {

@@ -14,7 +14,7 @@ type (
 	}
 )
 
-func characterToDto(char rpgdb.Character) DTO {
+func characterToDto(char rpgdb.CharacterState) DTO {
 	return DTO{
 		Level:        char.CharacterLevel,
 		Experience:   char.Experience,
@@ -26,7 +26,7 @@ func characterToDto(char rpgdb.Character) DTO {
 	}
 }
 
-func charactersToDtos(characters []rpgdb.Character) []DTO {
+func charactersToDtos(characters []rpgdb.CharacterState) []DTO {
 	dtos := make([]DTO, len(characters))
 	for i, char := range characters {
 		dtos[i] = characterToDto(char)

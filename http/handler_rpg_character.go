@@ -9,20 +9,11 @@ import (
 )
 
 type characterHandler struct {
-	charSvc character.CharacterService
+	charSvc character.CharacterManagement
 }
 
-func newCharacterHandler(charSvc character.CharacterService) *characterHandler {
+func newCharacterHandler(charSvc character.CharacterManagement) *characterHandler {
 	return &characterHandler{charSvc: charSvc}
-}
-
-func (h *characterHandler) CharacterGetAll(w http.ResponseWriter, r *http.Request, requestedById string) {
-	characters, err := h.charSvc.List(r.Context())
-	if err != nil {
-		Error(w, r, err)
-		return
-	}
-	RespondWithJSON(w, http.StatusOK, characters)
 }
 
 func (h *characterHandler) CharacterGet(w http.ResponseWriter, r *http.Request, requestedById string) {
@@ -39,7 +30,7 @@ func (h *characterHandler) CharacterGet(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	RespondWithJSON(w, http.StatusOK, character)
+	respondWithJSON(w, http.StatusOK, character)
 }
 
 func (h *characterHandler) CharacterCreate(w http.ResponseWriter, r *http.Request, requestedById string) {
@@ -62,7 +53,7 @@ func (h *characterHandler) CharacterCreate(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	RespondWithJSON(w, http.StatusCreated, character)
+	respondWithJSON(w, http.StatusCreated, character)
 }
 
 func (h *characterHandler) CharacterUpdate(w http.ResponseWriter, r *http.Request, requestedById string) {
@@ -87,7 +78,7 @@ func (h *characterHandler) CharacterUpdate(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	RespondWithJSON(w, http.StatusOK, character)
+	respondWithJSON(w, http.StatusOK, character)
 }
 
 func (h *characterHandler) CharacterDelete(w http.ResponseWriter, r *http.Request, requestedById string) {
@@ -103,5 +94,5 @@ func (h *characterHandler) CharacterDelete(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	RespondWithJSON(w, http.StatusOK, nil)
+	respondWithJSON(w, http.StatusOK, nil)
 }
