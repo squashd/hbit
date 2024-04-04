@@ -3,7 +3,6 @@ package auth
 import (
 	"context"
 	"database/sql"
-	"fmt"
 
 	"github.com/SQUASHD/hbit"
 	"github.com/SQUASHD/hbit/auth/authdb"
@@ -68,7 +67,6 @@ func (s *service) Register(ctx context.Context, form CreateUserForm) (AuthDTO, e
 		return AuthDTO{}, err
 	}
 
-	fmt.Println(user.UserID)
 	accessToken, err := s.makeAccessToken(user.UserID)
 	if err != nil {
 		return AuthDTO{}, &hbit.Error{Code: hbit.EINTERNAL, Message: "failed to create tokens"}
@@ -182,7 +180,6 @@ func (s *service) makeAccessToken(userId string) (string, error) {
 	if err != nil {
 		return "", &hbit.Error{Code: hbit.EINTERNAL, Message: "failed to generate access token"}
 	}
-	fmt.Println(accessToken)
 	return accessToken, nil
 }
 
