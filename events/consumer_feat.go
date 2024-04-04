@@ -33,26 +33,34 @@ func NewFeatEventConsumer(url string) (*rabbitmq.Consumer, *rabbitmq.Conn, error
 	return consumer, conn, nil
 }
 
-type featEventHandler struct {
-	featSvc feat.Service
-}
+func FeatsMessageHandler(svc feat.Service) func(d rabbitmq.Delivery) rabbitmq.Action {
+	return func(d rabbitmq.Delivery) rabbitmq.Action {
+		var event hbit.EventMessage
+		if err := json.Unmarshal(d.Body, &event); err != nil {
+			fmt.Printf("failed to unmarshal event: %v\n", err)
+			return rabbitmq.NackDiscard
+		}
+		// TODO: Map events to dispatcher
+		switch event.Type {
+		case hbit.TASKDONE:
+			// TODO: Log task done
+			return rabbitmq.Ack
 
-func NewFeatEventHandler(svc feat.Service) *featEventHandler {
-	return &featEventHandler{featSvc: svc}
-}
+		case hbit.TASKUNDO:
+			// TODO: Log task undone
+			return rabbitmq.Ack
 
-func (h *featEventHandler) HandleEvents(d rabbitmq.Delivery) rabbitmq.Action {
-	var event hbit.EventMessage
-	if err := json.Unmarshal(d.Body, &event); err != nil {
-		fmt.Printf("failed to unmarshal event: %v\n", err)
-		return rabbitmq.NackDiscard
-	}
-	switch event.Type {
-	case "task_complete":
-		fmt.Printf("feats service received task complete event for user: %s\n", event.UserId)
-		return rabbitmq.Ack
-	default:
-		return rabbitmq.NackDiscard
+		case hbit.RPGREWARD:
+			// TODO: Log RPG reward
+			return rabbitmq.Ack
 
+		case hbit.LEVELUP:
+			// TODO: Log level up
+			return rabbitmq.Ack
+
+		default:
+			return rabbitmq.NackDiscard
+
+		}
 	}
 }

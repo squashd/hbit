@@ -7,6 +7,7 @@ import (
 
 	"github.com/SQUASHD/hbit"
 	"github.com/SQUASHD/hbit/task/taskdb"
+	"github.com/google/uuid"
 	"github.com/wagslane/go-rabbitmq"
 )
 
@@ -44,8 +45,25 @@ func (s *service) Create(ctx context.Context, form CreateTaskForm) (DTO, error) 
 		return DTO{}, &hbit.Error{Code: hbit.EUNAUTHORIZED, Message: "unauthorized"}
 	}
 
+	id := form.CreateTaskParams.ID
+	if _, err := uuid.Parse(id); err != nil {
+		return DTO{}, &hbit.Error{Code: hbit.EINVALID, Message: "invalid task id"}
+	}
+
+	taskId := hbit.NewUUID()
+	form.CreateTaskParams.ID = taskId
+
 	task, err := s.queries.CreateTask(ctx, form.CreateTaskParams)
 	if err != nil {
+		return DTO{}, err
+	}
+
+	if err := s.Publish(hbit.EventMessage{
+		Type:    hbit.TASKCREATED,
+		UserId:  hbit.UserId(form.RequestedById),
+		EventId: hbit.NewEventIdWithTimestamp("task"),
+		Payload: []byte{},
+	}, []string{"task.created"}); err != nil {
 		return DTO{}, err
 	}
 
@@ -57,12 +75,21 @@ func (s *service) Update(ctx context.Context, form UpdateTaskForm) (DTO, error) 
 	if form.UpdateTaskParams.ID != form.TaskId {
 		return DTO{}, &hbit.Error{Code: hbit.EUNAUTHORIZED, Message: "unauthorized"}
 	}
-	task, err := s.queries.UpdateTask(ctx, form.UpdateTaskParams)
+	task, err := s.queries.ReadTask(ctx, form.TaskId)
 	if err != nil {
 		return DTO{}, err
 	}
 
-	dto := toDTO(task)
+	if task.UserID != form.RequestedById {
+		return DTO{}, &hbit.Error{Code: hbit.EUNAUTHORIZED, Message: "unauthorized"}
+	}
+
+	updatedTask, err := s.queries.UpdateTask(ctx, form.UpdateTaskParams)
+	if err != nil {
+		return DTO{}, err
+	}
+
+	dto := toDTO(updatedTask)
 	return dto, nil
 }
 

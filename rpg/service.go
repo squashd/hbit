@@ -77,7 +77,7 @@ func (s *rpgService) HandleTaskCompleted(
 		return err
 	}
 
-	err = s.Publish(msg, []string{"task.reward"})
+	err = s.Publish(msg, []string{"rpg.reward"})
 	if err != nil {
 		return err
 	}

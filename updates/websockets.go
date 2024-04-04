@@ -10,8 +10,15 @@ func registerConnection(userId string, ws *websocket.Conn) {
 	clients[userId] = ws
 }
 
-func sendMessageToUser(userId string, message interface{}) {
-	if conn, ok := clients[userId]; ok {
+func sendMessageToUser(userId string, message any) {
+	conn, ok := clients[userId]
+	if !ok {
+		return
+	}
+
+	tagged := tagPayload(message)
+	if tagged.tag == "unknown" {
 		conn.WriteJSON(message)
 	}
+	conn.WriteJSON(message)
 }

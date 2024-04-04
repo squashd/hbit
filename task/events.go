@@ -17,3 +17,11 @@ type TaskDonePayload struct {
 type TaskUndonePayload struct {
 	TaskId string `json:"task_id"`
 }
+
+type TaskCreatedPayload struct {
+	TaskId string `json:"task_id"`
+}
+
+type TaskDeletedPayload struct {
+	TaskId string `json:"task_id"`
+}

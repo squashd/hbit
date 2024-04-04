@@ -1,11 +1,20 @@
 package feat
 
-import "context"
+import (
+	"context"
+
+	"github.com/SQUASHD/hbit"
+)
 
 type (
 	Service interface {
 		UserFeatService
 		Cleanup() error
+	}
+
+	EventService interface {
+		hbit.Publisher
+		hbit.UserDataHandler
 	}
 
 	UserFeatService interface {

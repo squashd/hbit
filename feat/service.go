@@ -30,8 +30,8 @@ func NewService(
 	}
 }
 
-func (s *service) GetUserFeats(ctx context.Context, userID string) ([]UserFeatsDTO, error) {
-	feats, err := s.queries.ListUserFeats(ctx, userID)
+func (s *service) GetUserFeats(ctx context.Context, userId string) ([]UserFeatsDTO, error) {
+	feats, err := s.queries.ListUserFeats(ctx, userId)
 	if err != nil {
 		return []UserFeatsDTO{}, err
 	}

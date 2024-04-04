@@ -6,6 +6,7 @@ import (
 
 	"github.com/SQUASHD/hbit"
 	"github.com/SQUASHD/hbit/rpg"
+	"github.com/SQUASHD/hbit/updates"
 	"github.com/wagslane/go-rabbitmq"
 )
 
@@ -29,46 +30,37 @@ func NewUpdateEventConsumer(url string) (*rabbitmq.Consumer, *rabbitmq.Conn, err
 
 	return consumer, conn, nil
 }
-
-type updateConsumerHandler struct {
-}
-
-func NewUpdateConsumerHandler() *updateConsumerHandler {
-	return &updateConsumerHandler{}
-}
-
-func (h *updateConsumerHandler) HandleEvents(d rabbitmq.Delivery) rabbitmq.Action {
-	var event hbit.EventMessage
-	if err := json.Unmarshal(d.Body, &event); err != nil {
-		fmt.Printf("failed to unmarshal event: %v\n", err)
-		return rabbitmq.NackDiscard
-	}
-	switch event.Type {
-	case "task_reward":
-		var payload rpg.TaskRewardPayload
-		err := json.Unmarshal(event.Payload, &payload)
-		if err != nil {
-			fmt.Printf("failed to unmarshal payload: %v\n", err)
+func UpdatesMessageHandler(svc *updates.Service) func(d rabbitmq.Delivery) rabbitmq.Action {
+	return func(d rabbitmq.Delivery) rabbitmq.Action {
+		var event hbit.EventMessage
+		if err := json.Unmarshal(d.Body, &event); err != nil {
+			fmt.Printf("failed to unmarshal event: %v\n", err)
 			return rabbitmq.NackDiscard
 		}
-		fmt.Printf("update consumer received task reward event: %v\n", payload)
-		return rabbitmq.Ack
-	case "level_up":
-		var payload rpg.CharacterLevelUpPayload
-		err := json.Unmarshal(event.Payload, &payload)
-		if err != nil {
-			fmt.Printf("failed to unmarshal payload: %v\n", err)
+		// TODO: Map events to dispatcher
+		switch event.Type {
+		case hbit.RPGREWARD:
+			var payload rpg.TaskRewardPayload
+			err := json.Unmarshal(event.Payload, &payload)
+			if err != nil {
+				return rabbitmq.NackDiscard
+			}
+			svc.SendMessageToUser(event.UserId, payload)
+			return rabbitmq.Ack
+
+		case hbit.LEVELUP:
+			var payload rpg.CharacterLevelUpPayload
+			err := json.Unmarshal(event.Payload, &payload)
+			if err != nil {
+				return rabbitmq.NackDiscard
+			}
+			svc.SendMessageToUser(event.UserId, payload)
+			return rabbitmq.Ack
+
+		default:
 			return rabbitmq.NackDiscard
+
 		}
-		fmt.Printf("update consumer received task reward event: %v\n", payload)
-		return rabbitmq.Ack
-	case "task_complete":
-		fmt.Printf("update consumer received task completed event: %v\n", event)
-		return rabbitmq.Ack
-	default:
-		fmt.Printf("update consumer received unknown event: %v\n", event.Type)
-		return rabbitmq.NackDiscard
 
 	}
-
 }
