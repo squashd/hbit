@@ -49,7 +49,6 @@ func main() {
 	wrappedRouter := http.ChainMiddleware(
 		rpgRouter,
 		http.CORSMiddleware,
-		http.LoggerMiddleware,
 	)
 	server, err := http.NewServer(
 		wrappedRouter,

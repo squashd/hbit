@@ -1,0 +1,20 @@
+#!/bin/zsh
+
+BASE_PATH=$(pwd)
+
+free_port() {
+  local port=$1
+  echo "Attempting to free up port $port..."
+  local pid=$(lsof -ti tcp:$port)
+  if [[ -n $pid ]]; then
+    echo "Killing process $pid on port $port"
+    kill -9 $pid
+  fi
+}
+
+free_port 9080
+free_port 9081
+free_port 9082
+free_port 9083
+free_port 9084
+free_port 9085

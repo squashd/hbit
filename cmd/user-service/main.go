@@ -27,7 +27,6 @@ func main() {
 	wrappedRouter := http.ChainMiddleware(
 		userRouter,
 		http.CORSMiddleware,
-		http.LoggerMiddleware,
 	)
 	server, err := http.NewServer(
 		wrappedRouter,

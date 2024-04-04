@@ -42,7 +42,11 @@ func main() {
 	}
 
 	server, err := http.NewServer(
-		gateway,
+		http.ChainMiddleware(
+			gateway,
+			http.CORSMiddleware,
+			http.LoggerMiddleware,
+		),
 		http.WithServerOptionsPortFromEnv("API_GATEWAY_PORT"),
 	)
 	if err != nil {

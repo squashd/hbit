@@ -29,7 +29,10 @@ func main() {
 	router := http.NewUpdatesRouter(svc)
 
 	server, err := http.NewServer(
-		router,
+		http.ChainMiddleware(
+			router,
+			http.CORSMiddleware,
+		),
 		http.WithServerOptionsPortFromEnv("UPDATES_SVC_PORT"),
 	)
 	if err != nil {

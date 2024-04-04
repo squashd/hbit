@@ -36,7 +36,6 @@ func main() {
 	wrappedRouter := http.ChainMiddleware(
 		taskRouter,
 		http.CORSMiddleware,
-		http.LoggerMiddleware,
 	)
 	server, err := http.NewServer(
 		wrappedRouter,
