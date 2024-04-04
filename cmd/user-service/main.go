@@ -26,7 +26,6 @@ func main() {
 	userRouter := http.NewUserRouter(userSvc)
 	wrappedRouter := http.ChainMiddleware(
 		userRouter,
-		http.CORSMiddleware,
 	)
 	server, err := http.NewServer(
 		wrappedRouter,

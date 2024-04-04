@@ -47,7 +47,6 @@ func main() {
 	rpgRouter := http.NewRPGRouter(characterSvc, questSvc)
 	wrappedRouter := http.ChainMiddleware(
 		rpgRouter,
-		http.CORSMiddleware,
 	)
 	server, err := http.NewServer(
 		wrappedRouter,
@@ -83,7 +82,7 @@ func main() {
 	go func() {
 		defer wg.Done()
 		if err := consumer.Run(
-			events.RPGConsumerHandler(rpgSvc),
+			events.RPGMessageHandler(rpgSvc),
 		); err != nil {
 			log.Fatalf("cannot start consuming: %s", err)
 		}

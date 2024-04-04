@@ -22,8 +22,6 @@ func main() {
 		log.Fatalf("cannot create feat consumer: %s", err)
 	}
 	defer conn.Close()
-	eventHandler := events.NewUpdateConsumerHandler()
-
 	svc := updates.NewService()
 
 	router := http.NewUpdatesRouter(svc)
@@ -31,7 +29,6 @@ func main() {
 	server, err := http.NewServer(
 		http.ChainMiddleware(
 			router,
-			http.CORSMiddleware,
 		),
 		http.WithServerOptionsPortFromEnv("UPDATES_SVC_PORT"),
 	)
@@ -64,7 +61,7 @@ func main() {
 	go func() {
 		defer wg.Done()
 		if err := consumer.Run(
-			eventHandler.HandleEvents,
+			events.UpdatesMessageHandler(svc),
 		); err != nil {
 			log.Fatalf("cannot start consuming: %s", err)
 		}

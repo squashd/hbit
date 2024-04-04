@@ -41,7 +41,6 @@ func main() {
 	authRouter := http.NewAuthRouter(authSvc, jwtConf)
 	wrappedRouter := http.ChainMiddleware(
 		authRouter,
-		http.CORSMiddleware,
 	)
 
 	server, err := http.NewServer(

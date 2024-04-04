@@ -37,12 +37,9 @@ func main() {
 		log.Fatalf("cannot create feat consumer: %s", err)
 	}
 	defer conn.Close()
-	eventHandler := events.NewFeatEventHandler(featSvc)
-
 	featRouter := http.NewFeatRouter(featSvc)
 	wrappedRouter := http.ChainMiddleware(
 		featRouter,
-		http.CORSMiddleware,
 	)
 	server, err := http.NewServer(
 		wrappedRouter,
@@ -76,7 +73,7 @@ func main() {
 	go func() {
 		defer wg.Done()
 		if err := consumer.Run(
-			eventHandler.HandleEvents,
+			events.FeatsMessageHandler(featSvc),
 		); err != nil {
 			log.Fatalf("cannot start consuming: %s", err)
 		}
