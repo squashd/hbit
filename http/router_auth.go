@@ -12,6 +12,5 @@ func NewAuthRouter(svc auth.Service, jwtConf config.JwtOptions) *http.ServeMux {
 	authHandler := newAuthHandler(svc, jwtConf)
 	router.HandleFunc("POST /login", authHandler.Login)
 	router.HandleFunc("POST /register", authHandler.Register)
-	router.HandleFunc("GET /verify", authHandler.Verify)
 	return router
 }

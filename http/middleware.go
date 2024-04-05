@@ -55,7 +55,6 @@ func LoggerMiddleware(next http.Handler) http.Handler {
 type AuthedHandler func(w http.ResponseWriter, r *http.Request, userId string)
 
 // AuthChainMiddleware is a higher order function that returns a middleware function that authenticates users
-// This is mostly going to just extract the X-User-Id header from the request, but could be expanded to include other methods
 func AuthChainMiddleware(userIdGetter func(r *http.Request) (string, error)) func(next AuthedHandler) http.HandlerFunc {
 	return func(next AuthedHandler) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -78,6 +77,7 @@ func GetUserIdFromHeader(r *http.Request) (string, error) {
 	return userId, nil
 }
 
+// CORSMiddlware... the name's on the tin
 func CORSMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
