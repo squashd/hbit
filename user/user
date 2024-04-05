@@ -1,0 +1,17 @@
+" ============================================================================
+" Netrw Directory Listing                                        (netrw v171)
+"   /Users/hjartland/repos/personal-projects/hbit/user
+"   Sorted by      name
+"   Sort sequence: [\/]$,\<core\%(\.\d\+\)\=\>,\.h$,\.c$,\.cpp$,\~\=\*$,*,\.o$,\.obj$,\.info$,\.swp$,\.bak$,\~$
+"   Quick Help: <F1>:help  -:go up dir  D:delete  R:rename  s:sort-by  x:special
+" ==============================================================================
+../
+./
+database/
+queries/
+schemas/
+userdb/
+db.go turso.go
+embed.go
+service.go
+user.go
