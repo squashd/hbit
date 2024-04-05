@@ -7,7 +7,6 @@ import (
 
 	"github.com/SQUASHD/hbit"
 	"github.com/SQUASHD/hbit/task/taskdb"
-	"github.com/google/uuid"
 	"github.com/wagslane/go-rabbitmq"
 )
 
@@ -33,7 +32,7 @@ func NewService(
 
 func (s *service) List(ctx context.Context, requestedById string) ([]DTO, error) {
 	todos, err := s.queries.ListTasks(ctx, requestedById)
-	if err != nil {
+	if err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
 	dtos := toDTOs(todos)
@@ -44,14 +43,6 @@ func (s *service) Create(ctx context.Context, form CreateTaskForm) (DTO, error) 
 	if form.CreateTaskParams.UserID != form.RequestedById {
 		return DTO{}, &hbit.Error{Code: hbit.EUNAUTHORIZED, Message: "unauthorized"}
 	}
-
-	id := form.CreateTaskParams.ID
-	if _, err := uuid.Parse(id); err != nil {
-		return DTO{}, &hbit.Error{Code: hbit.EINVALID, Message: "invalid task id"}
-	}
-
-	taskId := hbit.NewUUID()
-	form.CreateTaskParams.ID = taskId
 
 	task, err := s.queries.CreateTask(ctx, form.CreateTaskParams)
 	if err != nil {

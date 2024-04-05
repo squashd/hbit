@@ -29,8 +29,8 @@ func (s *Service) SendMessageToUser(userId hbit.UserId, message any) {
 	}
 
 	tagged := tagPayload(message)
-	if tagged.tag == "unknown" {
-		conn.WriteJSON(message)
+	if tagged.tag == UNKNOWN {
+		conn.WriteJSON("unknown message type")
 	}
 	conn.WriteJSON(message)
 }

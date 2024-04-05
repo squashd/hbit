@@ -20,6 +20,7 @@ type (
 		DeleteUser(userId string) error
 	}
 
+	// JwtAuth is the interface for handling JWT tokens
 	JwtAuth interface {
 		AuthenticateUser(ctx context.Context, accessToken string) (userId string, err error)
 		RefreshToken(ctx context.Context, refreshToken string) (accessToken, userId string, err error)

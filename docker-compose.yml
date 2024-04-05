@@ -1,17 +1,14 @@
 version: '3.8'
 services:
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  api-gateway:
+    build:
+      context: .
+      dockerfile: cmd/api-gateway/Dockerfile
     depends_on:
       - task-service
       - rpg-service
       - feat-service
       - update-service
-      - auth-service
     networks:
       - rabbitmq_go_net
 
@@ -64,20 +61,6 @@ services:
     environment:
       - UPDATE_DB_URL
       - UPDATE_DB_TOKEN
-      - RABBITMQ_URL=amqp://guest:guest@rabbitmq
-    networks:
-      - rabbitmq_go_net
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-
-  auth-service:
-    build:
-      context: .
-      dockerfile: cmd/auth-service/Dockerfile
-    environment:
-      - AUTH_DB_URL
-      - AUTH_DB_TOKEN
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq
     networks:
       - rabbitmq_go_net

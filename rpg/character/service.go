@@ -6,7 +6,6 @@ import (
 
 	"github.com/SQUASHD/hbit"
 	"github.com/SQUASHD/hbit/rpg/rpgdb"
-	"github.com/wagslane/go-rabbitmq"
 )
 
 type (
@@ -19,7 +18,6 @@ type (
 func NewService(
 	db *sql.DB,
 	queries *rpgdb.Queries,
-	publisher *rabbitmq.Publisher,
 ) CharacterService {
 	return &service{
 		db:      db,

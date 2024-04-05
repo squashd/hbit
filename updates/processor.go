@@ -2,19 +2,28 @@ package updates
 
 import "github.com/SQUASHD/hbit/rpg"
 
+type Tag string
+
 type taggedPayload struct {
-	tag string
+	tag Tag
 	any
 }
 
-func determineTag(payload any) string {
+const (
+	TASKREWARD  Tag = "taskReward"
+	QUESTREWARD Tag = "questReward"
+	LEVELUP     Tag = "levelUp"
+	UNKNOWN     Tag = "unknown"
+)
+
+func determineTag(payload any) Tag {
 	switch payload.(type) {
 	case rpg.TaskRewardPayload:
-		return "reward"
+		return TASKREWARD
 	case rpg.CharacterLevelUpPayload:
-		return "levelup"
+		return LEVELUP
 	default:
-		return "unknown"
+		return UNKNOWN
 	}
 }
 

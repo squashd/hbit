@@ -112,7 +112,6 @@ func validatePassword(password, confirmPassword string) []*hbit.Error {
 
 func convertUserFormToModel(form CreateUserForm, password string) authdb.CreateAuthParams {
 	return authdb.CreateAuthParams{
-		UserID:         string(hbit.NewUUID()),
 		Username:       form.Username,
 		HashedPassword: password,
 	}
@@ -144,12 +143,13 @@ func (s *service) Login(ctx context.Context, form LoginForm) (AuthDTO, error) {
 	return dto, nil
 }
 
+// TODO: Implement
 func (s *service) SignOut(ctx context.Context) error {
-	panic("implement me")
+	return nil
 }
 
 func (s *service) AuthenticateUser(ctx context.Context, accessToken string) (userId string, err error) {
-	id, err := ValidateJWT(accessToken, s.jwtConfig.JwtSecret, s.jwtConfig.AccessIssuer)
+	id, err := ValidateJWT(accessToken, s.jwtConfig.JwtSecret)
 	if err != nil {
 		return "", &hbit.Error{Code: hbit.EUNAUTHORIZED, Message: "invalid token"}
 	}
@@ -157,7 +157,7 @@ func (s *service) AuthenticateUser(ctx context.Context, accessToken string) (use
 }
 
 func (s *service) RefreshToken(ctx context.Context, refreshToken string) (accessToken, userId string, err error) {
-	id, err := ValidateJWT(refreshToken, s.jwtConfig.JwtSecret, s.jwtConfig.RefreshIssuer)
+	id, err := ValidateJWT(refreshToken, s.jwtConfig.JwtSecret)
 	if err != nil {
 		return "", "", &hbit.Error{Code: hbit.EUNAUTHORIZED, Message: "invalid token"}
 	}
@@ -167,7 +167,7 @@ func (s *service) RefreshToken(ctx context.Context, refreshToken string) (access
 		return "", "", &hbit.Error{Code: hbit.EUNAUTHORIZED, Message: "invalid token"}
 	}
 
-	token, err := s.makeAccessToken(userId)
+	token, err := s.makeAccessToken(id)
 	if err != nil {
 		return "", "", err
 	}

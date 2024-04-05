@@ -30,7 +30,7 @@ func NewRPGEventConsumer(url string) (*rabbitmq.Consumer, *rabbitmq.Conn, error)
 	return consumer, conn, nil
 }
 
-func RPGConsumerHandler(svc rpg.EventService) func(d rabbitmq.Delivery) rabbitmq.Action {
+func RPGMessageHandler(svc rpg.EventService) func(d rabbitmq.Delivery) rabbitmq.Action {
 	return func(d rabbitmq.Delivery) rabbitmq.Action {
 		var event hbit.EventMessage
 		if err := json.Unmarshal(d.Body, &event); err != nil {
