@@ -4,17 +4,16 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/SQUASHD/hbit"
 	"github.com/SQUASHD/hbit/auth"
 	"github.com/SQUASHD/hbit/config"
 )
 
 type authHandler struct {
-	authSvc auth.Service
+	authSvc auth.UserAuth
 	jwtConf config.JwtOptions
 }
 
-func newAuthHandler(authSvc auth.Service, jwtConf config.JwtOptions) *authHandler {
+func newAuthHandler(authSvc auth.UserAuth, jwtConf config.JwtOptions) *authHandler {
 	return &authHandler{
 		authSvc: authSvc,
 		jwtConf: jwtConf,
@@ -38,7 +37,7 @@ func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	setAccessCookie(w, dto.AccessToken, h.jwtConf.AccessDuration)
-	SetRefreshCookie(w, dto.RefreshToken, h.jwtConf.RefreshDuration)
+	setRefreshCookie(w, dto.RefreshToken, h.jwtConf.RefreshDuration)
 	respondWithJSON(w, http.StatusOK, dto)
 }
 
@@ -59,7 +58,7 @@ func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	setAccessCookie(w, loginDto.AccessToken, h.jwtConf.AccessDuration)
-	SetRefreshCookie(w, loginDto.RefreshToken, h.jwtConf.RefreshDuration)
+	setRefreshCookie(w, loginDto.RefreshToken, h.jwtConf.RefreshDuration)
 
 	respondWithJSON(w, http.StatusOK, loginDto)
 }
@@ -87,14 +86,16 @@ func (h *authHandler) Revoke(w http.ResponseWriter, r *http.Request) {
 
 	respondWithJSON(w, http.StatusOK, map[string]string{"message": "Successfully revoked token"})
 }
-func (h *authHandler) Verify(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticateUser(w, r, h.authSvc, h.jwtConf)
-	if err != nil {
-		Error(w, r, err)
-		return
+func Verify(svc auth.Service, jwtConf config.JwtOptions) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userId, err := authenticateUser(w, r, h.authSvc, h.jwtConf)
+		if err != nil {
+			Error(w, r, err)
+			return
+		}
+		r.Header.Set("X-User-Id", userId)
+		respondWithJSON(w, http.StatusOK, map[string]string{"message": "Successfully verified token"})
 	}
-	r.Header.Set("X-User-Id", userId)
-	respondWithJSON(w, http.StatusOK, map[string]string{"message": "Successfully verified token"})
 }
 
 func (h *authHandler) AdminRouterMiddleware(next http.Handler) http.Handler {
@@ -113,38 +114,4 @@ func (h *authHandler) AdminRouterMiddleware(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		}
 	})
-}
-
-func (h *authHandler) AuthMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userId, err := authenticateUser(w, r, h.authSvc, h.jwtConf)
-		if err != nil {
-			Error(w, r, err)
-			return
-		}
-		w.Header().Set("X-User-Id", userId)
-		next.ServeHTTP(w, r)
-	})
-}
-
-func authenticateUser(w http.ResponseWriter, r *http.Request, svc auth.Service, jwtConf config.JwtOptions) (userID string, err error) {
-	refreshToken := getRefreshTokenFromCookie(r)
-	accessToken := getAccessTokenFromCookie(r)
-	if refreshToken == "" {
-		clearTokensFromCookie(w)
-		return "", &hbit.Error{Code: hbit.EUNAUTHORIZED, Message: "Missing refresh token"}
-	}
-	if accessToken == "" {
-		accessToken, userID, err = svc.RefreshToken(r.Context(), refreshToken)
-		if err != nil {
-			return "", err
-		}
-		setAccessCookie(w, accessToken, jwtConf.AccessDuration)
-	} else {
-		userID, err = svc.AuthenticateUser(r.Context(), accessToken)
-		if err != nil {
-			return "", err
-		}
-	}
-	return userID, nil
 }

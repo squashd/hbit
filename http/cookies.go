@@ -42,21 +42,23 @@ func setAccessCookie(w http.ResponseWriter, token string, duration time.Duration
 		Name:     ACCESS_TOKEN,
 		Value:    token,
 		HttpOnly: true,
-		SameSite: http.SameSiteNoneMode,
+		SameSite: http.SameSiteStrictMode,
 		Path:     "/",
 		Secure:   true,
+		Domain:   "localhost",
 		Expires:  time.Now().UTC().Add(duration),
 	})
 }
 
-func SetRefreshCookie(w http.ResponseWriter, token string, duration time.Duration) {
+func setRefreshCookie(w http.ResponseWriter, token string, duration time.Duration) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     REFRESH_TOKEN,
 		Value:    token,
 		HttpOnly: true,
-		SameSite: http.SameSiteNoneMode,
+		SameSite: http.SameSiteStrictMode,
 		Secure:   true,
 		Path:     "/",
+		Domain:   "localhost",
 		Expires:  time.Now().UTC().Add(duration),
 	})
 }

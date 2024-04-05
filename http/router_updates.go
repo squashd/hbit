@@ -9,6 +9,10 @@ import (
 func NewUpdatesRouter(s *updates.Service) *http.ServeMux {
 	r := http.NewServeMux()
 	handler := newUpdatesServiceHandler(s)
+
+	userGetter := GetUserIdFromHeader
+	AuthMiddleware := AuthChainMiddleware(userGetter)
+
 	r.HandleFunc("/ws", AuthMiddleware(handler.ConnectToWS))
 	r.HandleFunc("GET /send", AuthMiddleware(handler.TestConncetion))
 

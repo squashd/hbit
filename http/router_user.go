@@ -9,6 +9,10 @@ import (
 func NewUserRouter(svc user.Service) *http.ServeMux {
 	router := http.NewServeMux()
 	handler := NewUserHandler(svc)
+
+	userGetter := GetUserIdFromHeader
+	AuthMiddleware := AuthChainMiddleware(userGetter)
+
 	router.HandleFunc("GET /settings", AuthMiddleware(handler.SettingsGet))
 	router.HandleFunc("PUT /settings", AuthMiddleware(handler.SettingsUpdate))
 	return router

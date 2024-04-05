@@ -39,7 +39,9 @@ func SetUpAPIGateway(
 	entry.HandleFunc("/register", authHandler.Register)
 
 	gateway := http.NewServeMux()
-	authMiddleware := authHandler.AuthMiddleware
+
+	authMiddleware := JwtAuthMiddleware(authSvc, jwtConf)
+
 	gateway.Handle("/users/", authMiddleware(http.StripPrefix("/users", userSvcProxy)))
 	gateway.Handle("/feats/", authMiddleware(http.StripPrefix("/feats", featsSvcProxy)))
 	gateway.Handle("/rpg/", authMiddleware(http.StripPrefix("/rpg", rpgSvcProxy)))
