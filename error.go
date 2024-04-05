@@ -16,6 +16,7 @@ const (
 	ENOTIMPLEMENTED AppError = "not_implemented"
 	EUNAUTHORIZED   AppError = "unauthorized"
 	EFORBIDDEN      AppError = "forbidden"
+	EASYNC          AppError = "async"
 )
 
 type Error struct {

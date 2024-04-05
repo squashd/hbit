@@ -16,6 +16,7 @@ var codes = map[hbit.AppError]int{
 	hbit.EUNAUTHORIZED:   http.StatusUnauthorized,
 	hbit.EFORBIDDEN:      http.StatusForbidden,
 	hbit.EINTERNAL:       http.StatusInternalServerError,
+	hbit.EASYNC:          http.StatusAccepted,
 }
 
 func ErrorStatusCode(code hbit.AppError) int {
