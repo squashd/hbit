@@ -19,8 +19,8 @@ func MakeJWT(userId, tokenSecret, issuer string, duration time.Duration) (string
 	return token.SignedString(signingKey)
 }
 
-func ValidateJWT(tokenString, tokenSecret, issuer string) (userId string, err error) {
-	claimsStruct := jwt.RegisteredClaims{Issuer: issuer}
+func ValidateJWT(tokenString, tokenSecret string) (userId string, err error) {
+	claimsStruct := jwt.RegisteredClaims{}
 	token, err := jwt.ParseWithClaims(
 		tokenString,
 		&claimsStruct,
