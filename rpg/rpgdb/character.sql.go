@@ -11,55 +11,18 @@ import (
 
 const createCharacter = `-- name: CreateCharacter :one
 INSERT INTO
-    character_state (
-        user_id,
-        class_id,
-        character_level,
-        experience,
-        health,
-        mana,
-        strength,
-        dexterity,
-        intelligence
-    )
+    character_state (user_id, class_id)
 VALUES
-    (
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?
-    ) RETURNING user_id, class_id, character_level, experience, health, mana, strength, dexterity, intelligence, event_id, timestamp
+    (?, ?) RETURNING user_id, class_id, character_level, experience, health, mana, strength, dexterity, intelligence, event_id, timestamp
 `
 
 type CreateCharacterParams struct {
-	UserID         string `json:"user_id"`
-	ClassID        string `json:"class_id"`
-	CharacterLevel int64  `json:"character_level"`
-	Experience     int64  `json:"experience"`
-	Health         int64  `json:"health"`
-	Mana           int64  `json:"mana"`
-	Strength       int64  `json:"strength"`
-	Dexterity      int64  `json:"dexterity"`
-	Intelligence   int64  `json:"intelligence"`
+	UserID  string `json:"user_id"`
+	ClassID string `json:"class_id"`
 }
 
 func (q *Queries) CreateCharacter(ctx context.Context, arg CreateCharacterParams) (CharacterState, error) {
-	row := q.db.QueryRowContext(ctx, createCharacter,
-		arg.UserID,
-		arg.ClassID,
-		arg.CharacterLevel,
-		arg.Experience,
-		arg.Health,
-		arg.Mana,
-		arg.Strength,
-		arg.Dexterity,
-		arg.Intelligence,
-	)
+	row := q.db.QueryRowContext(ctx, createCharacter, arg.UserID, arg.ClassID)
 	var i CharacterState
 	err := row.Scan(
 		&i.UserID,

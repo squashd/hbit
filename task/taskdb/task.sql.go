@@ -12,19 +12,18 @@ import (
 
 const createTask = `-- name: CreateTask :one
 INSERT INTO
-    task (id, user_id, title, data)
+    task (id, user_id, title)
 VALUES
-    (uuid4(), ?, ?, ?) RETURNING id, user_id, title, text, data, task_type, created_at, updated_at
+    (uuid4(), ?, ?) RETURNING id, user_id, title, text, data, task_type, created_at, updated_at
 `
 
 type CreateTaskParams struct {
-	UserID string      `json:"user_id"`
-	Title  string      `json:"title"`
-	Data   interface{} `json:"data"`
+	UserID string `json:"user_id"`
+	Title  string `json:"title"`
 }
 
 func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error) {
-	row := q.db.QueryRowContext(ctx, createTask, arg.UserID, arg.Title, arg.Data)
+	row := q.db.QueryRowContext(ctx, createTask, arg.UserID, arg.Title)
 	var i Task
 	err := row.Scan(
 		&i.ID,
@@ -135,25 +134,22 @@ UPDATE
 SET
     title = ?,
     text = ?,
-    data = ?,
     updated_at = ?
 WHERE
     id = ? RETURNING id, user_id, title, text, data, task_type, created_at, updated_at
 `
 
 type UpdateTaskParams struct {
-	Title     string      `json:"title"`
-	Text      string      `json:"text"`
-	Data      interface{} `json:"data"`
-	UpdatedAt time.Time   `json:"updated_at"`
-	ID        string      `json:"id"`
+	Title     string    `json:"title"`
+	Text      string    `json:"text"`
+	UpdatedAt time.Time `json:"updated_at"`
+	ID        string    `json:"id"`
 }
 
 func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, error) {
 	row := q.db.QueryRowContext(ctx, updateTask,
 		arg.Title,
 		arg.Text,
-		arg.Data,
 		arg.UpdatedAt,
 		arg.ID,
 	)

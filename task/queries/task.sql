@@ -8,9 +8,9 @@ WHERE
 
 -- name: CreateTask :one
 INSERT INTO
-    task (id, user_id, title, data)
+    task (id, user_id, title)
 VALUES
-    (uuid4(), ?, ?, ?) RETURNING *;
+    (uuid4(), ?, ?) RETURNING *;
 
 -- name: ReadTask :one
 SELECT
@@ -26,7 +26,6 @@ UPDATE
 SET
     title = ?,
     text = ?,
-    data = ?,
     updated_at = ?
 WHERE
     id = ? RETURNING *;

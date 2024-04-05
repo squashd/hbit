@@ -6,6 +6,7 @@ import (
 
 	"github.com/SQUASHD/hbit"
 	"github.com/SQUASHD/hbit/rpg/rpgdb"
+	"github.com/wagslane/go-rabbitmq"
 )
 
 type (
@@ -18,6 +19,7 @@ type (
 func NewService(
 	db *sql.DB,
 	queries *rpgdb.Queries,
+	publisher *rabbitmq.Publisher,
 ) CharacterService {
 	return &service{
 		db:      db,
@@ -30,16 +32,28 @@ func (s *service) List(ctx context.Context) ([]DTO, error) {
 }
 
 func (s *service) CreateCharacter(ctx context.Context, form CreateCharacterForm) (DTO, error) {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return DTO{}, &hbit.Error{Code: hbit.EINTERNAL, Message: "failed to start transaction"}
+	}
+	defer tx.Rollback()
+	_, err = s.queries.ReadCharacter(ctx, form.CreateCharacterParams.UserID)
+	if err == nil {
+		return DTO{}, &hbit.Error{Code: hbit.ECONFLICT, Message: "Character already exists"}
+	}
 	char, err := s.queries.CreateCharacter(ctx, form.CreateCharacterParams)
 	if err != nil {
 		return DTO{}, err
+	}
+	if err = tx.Commit(); err != nil {
+		return DTO{}, &hbit.Error{Code: hbit.EINTERNAL, Message: "failed to commit transaction"}
 	}
 
 	return characterToDto(char), nil
 }
 
-func (s *service) GetCharacter(ctx context.Context, form ReadCharacterForm) (DTO, error) {
-	char, err := s.queries.ReadCharacter(ctx, form.CharacterId)
+func (s *service) GetCharacter(ctx context.Context, userId string) (DTO, error) {
+	char, err := s.queries.ReadCharacter(ctx, userId)
 	if err != nil {
 		return DTO{}, err
 	}
@@ -56,8 +70,8 @@ func (s *service) UpdateCharacter(ctx context.Context, form UpdateCharacterForm)
 	return characterToDto(char), nil
 }
 
-func (s *service) DeleteCharacter(ctx context.Context, form DeleteCharacterForm) error {
-	return s.queries.DeleteCharacter(ctx, form.CharacterId)
+func (s *service) DeleteCharacter(ctx context.Context, userId string) error {
+	return s.queries.DeleteCharacter(ctx, userId)
 }
 
 func (s *service) CleanUp() error {

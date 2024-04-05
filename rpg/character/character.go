@@ -16,9 +16,9 @@ type (
 
 	CharacterManagement interface {
 		CreateCharacter(ctx context.Context, form CreateCharacterForm) (DTO, error)
-		GetCharacter(ctx context.Context, form ReadCharacterForm) (DTO, error)
+		GetCharacter(ctx context.Context, userId string) (DTO, error)
 		UpdateCharacter(ctx context.Context, form UpdateCharacterForm) (DTO, error)
-		DeleteCharacter(ctx context.Context, form DeleteCharacterForm) error
+		DeleteCharacter(ctx context.Context, userId string) error
 	}
 
 	AdminCharacterService interface {
