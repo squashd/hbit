@@ -9,11 +9,11 @@ import (
 )
 
 type authHandler struct {
-	authSvc auth.Service
+	authSvc auth.UserAuth
 	jwtConf config.JwtOptions
 }
 
-func newAuthHandler(authSvc auth.Service, jwtConf config.JwtOptions) *authHandler {
+func newAuthHandler(authSvc auth.UserAuth, jwtConf config.JwtOptions) *authHandler {
 	return &authHandler{
 		authSvc: authSvc,
 		jwtConf: jwtConf,
@@ -86,14 +86,16 @@ func (h *authHandler) Revoke(w http.ResponseWriter, r *http.Request) {
 
 	respondWithJSON(w, http.StatusOK, map[string]string{"message": "Successfully revoked token"})
 }
-func (h *authHandler) Verify(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticateUser(w, r, h.authSvc, h.jwtConf)
-	if err != nil {
-		Error(w, r, err)
-		return
+func Verify(svc auth.Service, jwtConf config.JwtOptions) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userId, err := authenticateUser(w, r, h.authSvc, h.jwtConf)
+		if err != nil {
+			Error(w, r, err)
+			return
+		}
+		r.Header.Set("X-User-Id", userId)
+		respondWithJSON(w, http.StatusOK, map[string]string{"message": "Successfully verified token"})
 	}
-	r.Header.Set("X-User-Id", userId)
-	respondWithJSON(w, http.StatusOK, map[string]string{"message": "Successfully verified token"})
 }
 
 func (h *authHandler) AdminRouterMiddleware(next http.Handler) http.Handler {

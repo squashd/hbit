@@ -17,8 +17,14 @@ func newCharacterHandler(charSvc character.CharacterManagement) *characterHandle
 }
 
 func (h *characterHandler) CharacterGet(w http.ResponseWriter, r *http.Request, requestedById string) {
+	id := r.PathValue("id")
 
-	character, err := h.charSvc.GetCharacter(r.Context(), requestedById)
+	form := character.ReadCharacterForm{
+		RequestedById: requestedById,
+		CharacterId:   id,
+	}
+
+	character, err := h.charSvc.GetCharacter(r.Context(), form)
 	if err != nil {
 		Error(w, r, err)
 		return
@@ -40,8 +46,6 @@ func (h *characterHandler) CharacterCreate(w http.ResponseWriter, r *http.Reques
 		CreateCharacterParams: data,
 		RequestedById:         requestedById,
 	}
-
-	form.CreateCharacterParams.UserID = requestedById
 
 	character, err := h.charSvc.CreateCharacter(r.Context(), form)
 	if err != nil {
@@ -78,8 +82,14 @@ func (h *characterHandler) CharacterUpdate(w http.ResponseWriter, r *http.Reques
 }
 
 func (h *characterHandler) CharacterDelete(w http.ResponseWriter, r *http.Request, requestedById string) {
+	id := r.PathValue("id")
 
-	if err := h.charSvc.DeleteCharacter(r.Context(), requestedById); err != nil {
+	form := character.DeleteCharacterForm{
+		RequestedById: requestedById,
+		CharacterId:   id,
+	}
+
+	if err := h.charSvc.DeleteCharacter(r.Context(), form); err != nil {
 		Error(w, r, err)
 		return
 	}
