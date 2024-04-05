@@ -8,7 +8,7 @@ FROM
 INSERT INTO
     quest (id, title, description, requirements, rewards)
 VALUES
-    (?, ?, ?, ?, ?) RETURNING *;
+    (uuid4(), ?, ?, ?, ?) RETURNING *;
 
 -- name: ReadQuest :one
 SELECT

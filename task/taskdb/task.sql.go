@@ -14,23 +14,17 @@ const createTask = `-- name: CreateTask :one
 INSERT INTO
     task (id, user_id, title, data)
 VALUES
-    (?, ?, ?, ?) RETURNING id, user_id, title, text, data, task_type, created_at, updated_at
+    (uuid4(), ?, ?, ?) RETURNING id, user_id, title, text, data, task_type, created_at, updated_at
 `
 
 type CreateTaskParams struct {
-	ID     string      `json:"id"`
 	UserID string      `json:"user_id"`
 	Title  string      `json:"title"`
 	Data   interface{} `json:"data"`
 }
 
 func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error) {
-	row := q.db.QueryRowContext(ctx, createTask,
-		arg.ID,
-		arg.UserID,
-		arg.Title,
-		arg.Data,
-	)
+	row := q.db.QueryRowContext(ctx, createTask, arg.UserID, arg.Title, arg.Data)
 	var i Task
 	err := row.Scan(
 		&i.ID,

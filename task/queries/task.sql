@@ -10,7 +10,7 @@ WHERE
 INSERT INTO
     task (id, user_id, title, data)
 VALUES
-    (?, ?, ?, ?) RETURNING *;
+    (uuid4(), ?, ?, ?) RETURNING *;
 
 -- name: ReadTask :one
 SELECT
