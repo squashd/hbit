@@ -3,6 +3,7 @@ ALTER TABLE
     character RENAME TO character_backup;
 
 CREATE TABLE IF NOT EXISTS character_state (
+    event_id TEXT NOT NULL PRIMARY KEY,
     user_id TEXT NOT NULL,
     class_id TEXT NOT NULL,
     character_level INTEGER NOT NULL DEFAULT 1,
@@ -12,7 +13,6 @@ CREATE TABLE IF NOT EXISTS character_state (
     strength INTEGER NOT NULL DEFAULT 5,
     dexterity INTEGER NOT NULL DEFAULT 5,
     intelligence INTEGER NOT NULL DEFAULT 5,
-    event_id TEXT NOT NULL,
     timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (class_id) REFERENCES character_class (id)
 );
@@ -176,19 +176,23 @@ WHERE
 DROP TABLE IF EXISTS character_state;
 
 ALTER TABLE
-    quest_backup RENAME TO quest;
+    quest_backup RENAME TO quest_temp;
 
 INSERT INTO
-    quest
+    quest_temp
 SELECT
-    id,
+    quest_id AS id,
     title,
     description,
-    requirements
+    details AS requirements,
+    '{}' AS rewards
 FROM
-    quest_backup;
+    quest;
 
 DROP TABLE quest;
+
+ALTER TABLE
+    quest_temp RENAME TO quest;
 
 ALTER TABLE
     user_quest RENAME TO user_quest_backup_temp;
@@ -201,9 +205,7 @@ INSERT INTO
 SELECT
     user_id,
     quest_id,
-    completed,
-    event_id,
-    details
+    completed
 FROM
     user_quest_backup_temp;
 
@@ -221,10 +223,10 @@ CREATE TABLE IF NOT EXISTS item (
 );
 
 INSERT INTO
-    item (id, slot)
+    item (id, name, attributes)
 SELECT
-    id,
-    slot,
+    item_id AS id,
+    name,
     JSON_OBJECT(
         'str_boost',
         str_boost,
@@ -232,12 +234,10 @@ SELECT
         dex_boost,
         'int_boost',
         int_boost
-    ) AS attributes,
-    '{}' AS requirements
+    ) AS attributes
 FROM
     item_temp;
 
-ALTER TABLE
-    item_backup RENAME TO item;
-
 DROP TABLE item_temp;
+
+DROP TABLE IF EXISTS item_backup;

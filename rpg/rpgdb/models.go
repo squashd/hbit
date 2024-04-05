@@ -27,6 +27,7 @@ type CharacterClass struct {
 }
 
 type CharacterState struct {
+	EventID        string    `json:"event_id"`
 	UserID         string    `json:"user_id"`
 	ClassID        string    `json:"class_id"`
 	CharacterLevel int64     `json:"character_level"`
@@ -36,7 +37,6 @@ type CharacterState struct {
 	Strength       int64     `json:"strength"`
 	Dexterity      int64     `json:"dexterity"`
 	Intelligence   int64     `json:"intelligence"`
-	EventID        string    `json:"event_id"`
 	Timestamp      time.Time `json:"timestamp"`
 }
 

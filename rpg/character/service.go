@@ -3,6 +3,7 @@ package character
 import (
 	"context"
 	"database/sql"
+	"errors"
 
 	"github.com/SQUASHD/hbit"
 	"github.com/SQUASHD/hbit/rpg/rpgdb"
@@ -36,7 +37,7 @@ func (s *service) CreateCharacter(ctx context.Context, form CreateCharacterForm)
 	}
 	defer tx.Rollback()
 	_, err = s.queries.ReadCharacter(ctx, form.CreateCharacterParams.UserID)
-	if err == nil {
+	if err == nil && err != sql.ErrNoRows {
 		return DTO{}, &hbit.Error{Code: hbit.ECONFLICT, Message: "Character already exists"}
 	}
 	char, err := s.queries.CreateCharacter(ctx, form.CreateCharacterParams)
@@ -53,6 +54,9 @@ func (s *service) CreateCharacter(ctx context.Context, form CreateCharacterForm)
 func (s *service) GetCharacter(ctx context.Context, userId string) (DTO, error) {
 	char, err := s.queries.ReadCharacter(ctx, userId)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return DTO{}, &hbit.Error{Code: hbit.EINVALID, Message: "Character not found"}
+		}
 		return DTO{}, err
 	}
 

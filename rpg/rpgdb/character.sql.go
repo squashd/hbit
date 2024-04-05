@@ -13,7 +13,7 @@ const createCharacter = `-- name: CreateCharacter :one
 INSERT INTO
     character_state (user_id, class_id)
 VALUES
-    (?, ?) RETURNING user_id, class_id, character_level, experience, health, mana, strength, dexterity, intelligence, event_id, timestamp
+    (?, ?) RETURNING event_id, user_id, class_id, character_level, experience, health, mana, strength, dexterity, intelligence, timestamp
 `
 
 type CreateCharacterParams struct {
@@ -25,6 +25,7 @@ func (q *Queries) CreateCharacter(ctx context.Context, arg CreateCharacterParams
 	row := q.db.QueryRowContext(ctx, createCharacter, arg.UserID, arg.ClassID)
 	var i CharacterState
 	err := row.Scan(
+		&i.EventID,
 		&i.UserID,
 		&i.ClassID,
 		&i.CharacterLevel,
@@ -34,7 +35,6 @@ func (q *Queries) CreateCharacter(ctx context.Context, arg CreateCharacterParams
 		&i.Strength,
 		&i.Dexterity,
 		&i.Intelligence,
-		&i.EventID,
 		&i.Timestamp,
 	)
 	return i, err
@@ -54,7 +54,7 @@ func (q *Queries) DeleteCharacter(ctx context.Context, userID string) error {
 
 const readCharacter = `-- name: ReadCharacter :one
 SELECT
-    user_id, class_id, character_level, experience, health, mana, strength, dexterity, intelligence, event_id, timestamp
+    event_id, user_id, class_id, character_level, experience, health, mana, strength, dexterity, intelligence, timestamp
 FROM
     character_state
 WHERE
@@ -69,6 +69,7 @@ func (q *Queries) ReadCharacter(ctx context.Context, userID string) (CharacterSt
 	row := q.db.QueryRowContext(ctx, readCharacter, userID)
 	var i CharacterState
 	err := row.Scan(
+		&i.EventID,
 		&i.UserID,
 		&i.ClassID,
 		&i.CharacterLevel,
@@ -78,7 +79,6 @@ func (q *Queries) ReadCharacter(ctx context.Context, userID string) (CharacterSt
 		&i.Strength,
 		&i.Dexterity,
 		&i.Intelligence,
-		&i.EventID,
 		&i.Timestamp,
 	)
 	return i, err
@@ -108,7 +108,7 @@ VALUES
         ?,
         ?,
         ?
-    ) RETURNING user_id, class_id, character_level, experience, health, mana, strength, dexterity, intelligence, event_id, timestamp
+    ) RETURNING event_id, user_id, class_id, character_level, experience, health, mana, strength, dexterity, intelligence, timestamp
 `
 
 type UpdateCharacterParams struct {
@@ -137,6 +137,7 @@ func (q *Queries) UpdateCharacter(ctx context.Context, arg UpdateCharacterParams
 	)
 	var i CharacterState
 	err := row.Scan(
+		&i.EventID,
 		&i.UserID,
 		&i.ClassID,
 		&i.CharacterLevel,
@@ -146,7 +147,6 @@ func (q *Queries) UpdateCharacter(ctx context.Context, arg UpdateCharacterParams
 		&i.Strength,
 		&i.Dexterity,
 		&i.Intelligence,
-		&i.EventID,
 		&i.Timestamp,
 	)
 	return i, err
