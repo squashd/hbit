@@ -8,7 +8,8 @@ import (
 )
 
 // NewTypesRouter returns a new http.ServeMux with routes to generate JSON
-// responses for the
+// responses for the various types
+// internal
 func NewTypesRouter() *http.ServeMux {
 	r := http.NewServeMux()
 	r.HandleFunc("GET /task", func(w http.ResponseWriter, r *http.Request) {
@@ -27,5 +28,13 @@ func NewTypesRouter() *http.ServeMux {
 		}
 		respondWithJSON(w, http.StatusOK, characterDTO)
 	})
+	r.HandleFunc("GET /taskpayload", func(w http.ResponseWriter, r *http.Request) {
+		var taskDoneReq struct {
+			task.UpdateTaskForm
+			task.TaskDonePayload
+		}
+		respondWithJSON(w, http.StatusOK, taskDoneReq)
+	})
+
 	return r
 }

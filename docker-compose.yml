@@ -10,7 +10,21 @@ services:
       - feat-service
       - update-service
     networks:
+      - internal_network
       - rabbitmq_go_net
+    environment:
+      - RABBITMQ_URL
+      - USER _SVC_URL
+      - FEAT_SVC_URL
+      - RPG_SVC_URL
+      - TASK_SVC_URL
+      - UPDATES_SVC_URL
+      - AUTH_DB_URL
+      - AUTH_DB_TOKEN
+      - JWT_SECRET
+      - API_GATEWAY_PORT
+    ports:
+      - 80:8080
 
   task-service:
     build:
@@ -19,9 +33,11 @@ services:
     environment:
       - TASK_DB_URL
       - TASK_DB_TOKEN
-      - RABBITMQ_URL=amqp://guest:guest@rabbitmq
+      - TASK_SVC_PORT
+      - RABBITMQ_URL
     networks:
       - rabbitmq_go_net
+      - internal_network
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -31,14 +47,16 @@ services:
       context: .
       dockerfile: cmd/rpg-service/Dockerfile
     environment:
-      - RABBITMQ_URL=amqp://guest:guest@rabbitmq
+      - RABBITMQ_URL
       - RPG_DB_URL
       - RPG_DB_TOKEN
+      - RPG_SVC_PORT
     depends_on:
       rabbitmq:
         condition: service_healthy
     networks:
       - rabbitmq_go_net
+      - internal_network
 
   feat-service:
     build:
@@ -47,27 +65,14 @@ services:
     environment:
       - ACH_DB_URL
       - ACH_DB_TOKEN
-      - RABBITMQ_URL=amqp://guest:guest@rabbitmq
+      - FEAT_SVC_PORT
+      - RABBITMQ_URL
     networks:
       - rabbitmq_go_net
+      - internal_network
     depends_on:
       rabbitmq:
         condition: service_healthy
-
-  update-service:
-    build:
-      context: .
-      dockerfile: cmd/update-service/Dockerfile
-    environment:
-      - UPDATE_DB_URL
-      - UPDATE_DB_TOKEN
-      - RABBITMQ_URL=amqp://guest:guest@rabbitmq
-    networks:
-      - rabbitmq_go_net
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-
   user-service:
     build:
       context: .
@@ -75,9 +80,11 @@ services:
     environment:
       - USER_DB_URL
       - USER_DB_TOKEN
-      - RABBITMQ_URL=amqp://guest:guest@rabbitmq
+      - USER_SVC_PORT
+      - RABBITMQ_URL
     networks:
       - rabbitmq_go_net
+      - internal_network
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -101,4 +108,6 @@ services:
 
 networks:
   rabbitmq_go_net:
+    driver: bridge
+  internal_network:
     driver: bridge
