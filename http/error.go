@@ -1,7 +1,7 @@
 package http
 
 import (
-	"fmt"
+	"log"
 	"net/http"
 	"strings"
 
@@ -45,7 +45,7 @@ func Error(w http.ResponseWriter, r *http.Request, err error) {
 			if e.Code != hbit.EINTERNAL {
 				messages = append(messages, e.Message)
 			} else {
-				fmt.Printf("Error: %v\n", e)
+				LogError(r, e)
 			}
 		}
 		respondWithJSON(w, ErrorStatusCode(hbit.EINVALID), ErrorResponse{Error: strings.Join(messages, ", ")})
@@ -54,10 +54,17 @@ func Error(w http.ResponseWriter, r *http.Request, err error) {
 	default:
 		code, message := hbit.ErrorCode(err), hbit.ErrorMessage(err)
 		if code == hbit.EINTERNAL {
-			fmt.Printf("Error: %v\n", err)
+			// TODO: report internal errors instead of no-op
+			hbit.ReportError(r.Context(), err, r)
+
+			LogError(r, err)
 		}
 		respondWithJSON(w, ErrorStatusCode(code), ErrorResponse{Error: message})
 	}
+}
+
+func LogError(r *http.Request, err error) {
+	log.Printf("[http] error: %s %s: %s", r.Method, r.URL.Path, err)
 }
 
 type ErrorResponse struct {
