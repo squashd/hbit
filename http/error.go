@@ -56,11 +56,11 @@ func Error(w http.ResponseWriter, r *http.Request, err error) {
 
 	default:
 		code, message := hbit.ErrorCode(err), hbit.ErrorMessage(err)
+		// TODO: Remove this once the app has fewer unknown errors.
+		LogError(r, err)
 		if code == hbit.EINTERNAL {
-			// TODO: report internal errors instead of no-op
 			hbit.ReportError(r.Context(), err, r)
 
-			LogError(r, err)
 		}
 		respondWithJSON(w, ErrorStatusCode(code), ErrorResponse{Error: message})
 	}

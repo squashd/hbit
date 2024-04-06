@@ -45,6 +45,7 @@ func main() {
 		http.ChainMiddleware(
 			gateway,
 			http.CORSMiddleware,
+			http.LoggerMiddleware,
 		),
 		http.WithServerOptionsPortFromEnv("API_GATEWAY_PORT"),
 	)
