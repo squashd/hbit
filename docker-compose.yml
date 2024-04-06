@@ -8,9 +8,7 @@ services:
       - task-service
       - rpg-service
       - feat-service
-      - update-service
     networks:
-      - internal_network
       - rabbitmq_go_net
     environment:
       - RABBITMQ_URL
@@ -37,7 +35,6 @@ services:
       - RABBITMQ_URL
     networks:
       - rabbitmq_go_net
-      - internal_network
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -56,7 +53,6 @@ services:
         condition: service_healthy
     networks:
       - rabbitmq_go_net
-      - internal_network
 
   feat-service:
     build:
@@ -69,7 +65,6 @@ services:
       - RABBITMQ_URL
     networks:
       - rabbitmq_go_net
-      - internal_network
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -84,7 +79,6 @@ services:
       - RABBITMQ_URL
     networks:
       - rabbitmq_go_net
-      - internal_network
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -108,6 +102,4 @@ services:
 
 networks:
   rabbitmq_go_net:
-    driver: bridge
-  internal_network:
     driver: bridge
