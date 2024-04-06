@@ -10,6 +10,8 @@ import (
 
 // Event types
 // Because Go does not have enums... sad
+// I do not want event types to be routing keys as consumer should be able to
+// subscribe to multiple event types without knowing the routing key
 const (
 	TASKDONE    EventType = "task_done"
 	TASKUNDO    EventType = "task_undo"
@@ -96,6 +98,9 @@ func NewEventMessage(
 	eventId EventId,
 	payload any,
 ) (EventMessage, error) {
+	if payload == nil {
+		payload = map[string]interface{}{}
+	}
 
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {

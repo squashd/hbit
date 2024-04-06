@@ -68,6 +68,17 @@ func AuthChainMiddleware(userIdGetter func(r *http.Request) (string, error)) fun
 	}
 }
 
+func AuthMiddleware(next AuthedHandler) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userId, err := GetUserIdFromHeader(r)
+		if err != nil {
+			Error(w, r, err)
+			return
+		}
+		next(w, r, userId)
+	})
+}
+
 // GetUserIdFromHeader is a helper function that extracts the X-User-Id header from a request
 func GetUserIdFromHeader(r *http.Request) (string, error) {
 	userId := r.Header.Get("X-User-Id")
@@ -88,8 +99,9 @@ func CORSMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// JwtAuthRouterMiddleware is middleware that authenticates user before forwarding request to the router
 // Refactor from being a method of authHandler
-func JwtAuthMiddleware(svc auth.JwtAuth, jwtConf config.JwtOptions) func(next http.Handler) http.Handler {
+func JwtAuthRouterMiddleware(svc auth.JwtAuth, jwtConf config.JwtOptions) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			userId, err := authenticateUser(w, r, svc, jwtConf)
@@ -97,10 +109,16 @@ func JwtAuthMiddleware(svc auth.JwtAuth, jwtConf config.JwtOptions) func(next ht
 				Error(w, r, err)
 				return
 			}
-			r.Header.Add("X-User-Id", userId)
+			setUserIdInRequestHeader(r, userId)
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+// setUserIdInRequestHeader is a helper function to JwtAuthMiddleware
+// since user authentication is done at the API gateway via cookies, the user id is set in the request header
+func setUserIdInRequestHeader(r *http.Request, userId string) {
+	r.Header.Set("X-User-Id", userId)
 }
 
 // authenticateUser is a helper function to JwtAuthMiddleware
