@@ -34,7 +34,18 @@ type (
 		CreatedAt time.Time `json:"created_at"`
 		UpdatedAt time.Time `json:"updated_at"`
 	}
+
+	CreateTaskRequest struct {
+		Title string `json:"title"`
+	}
 )
+
+func CreateFormtoModel(form CreateTaskForm) taskdb.CreateTaskParams {
+	return taskdb.CreateTaskParams{
+		Title:  form.Title,
+		UserID: form.RequestedById,
+	}
+}
 
 func toDTO(task taskdb.Task) DTO {
 	return DTO{

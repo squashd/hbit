@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/SQUASHD/hbit"
 	"github.com/SQUASHD/hbit/task"
 	"github.com/SQUASHD/hbit/task/taskdb"
 )
@@ -36,17 +37,16 @@ func (h *taskHandler) Get(w http.ResponseWriter, r *http.Request, requestedById 
 }
 
 func (h *taskHandler) Create(w http.ResponseWriter, r *http.Request, requestedById string) {
-	var data taskdb.CreateTaskParams
+	var data task.CreateTaskRequest
 
-	decoder := json.NewDecoder(r.Body)
-	if err := decoder.Decode(&data); err != nil {
-		Error(w, r, err)
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		Error(w, r, &hbit.Error{Message: "invalid task payload", Code: hbit.EINVALID})
 		return
 	}
 
 	form := task.CreateTaskForm{
-		CreateTaskParams: data,
-		RequestedById:    requestedById,
+		CreateTaskRequest: data,
+		RequestedById:     requestedById,
 	}
 
 	todo, err := h.taskSvc.Create(r.Context(), form)

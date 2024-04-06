@@ -13,7 +13,7 @@ type (
 	}
 
 	CreateTaskForm struct {
-		taskdb.CreateTaskParams
+		CreateTaskRequest
 		RequestedById string
 	}
 

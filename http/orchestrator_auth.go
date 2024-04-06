@@ -54,6 +54,7 @@ func (o *orchestratorReg) OrchestrateRegistration(w http.ResponseWriter, r *http
 		character.CreateCharacterForm
 	}{
 		CreateUserForm: auth.CreateUserForm{
+			UserID:          userId, // Previously we used SQLi to generate a UUID
 			Username:        form.Username,
 			Password:        form.Password,
 			ConfirmPassword: form.ConfirmPassword,
@@ -88,6 +89,7 @@ func (o *orchestratorReg) OrchestrateRegistration(w http.ResponseWriter, r *http
 	wg.Wait()
 
 	if authErr != nil && rpgErr == nil {
+		LogError(r, authErr)
 		go func() {
 			// since authErr is not nil, we can assume that the user was not created
 			// and we should not attempt to delete the user
@@ -115,6 +117,7 @@ func (o *orchestratorReg) OrchestrateRegistration(w http.ResponseWriter, r *http
 	}
 
 	if rpgErr != nil && authErr == nil {
+		LogError(r, rpgErr)
 		go func() {
 			// since rpgErr is not nil, we can assume that the character was not created
 			// and thus the application is in an inconsistent state

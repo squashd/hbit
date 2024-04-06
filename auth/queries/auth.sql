@@ -10,7 +10,7 @@ WHERE
 INSERT INTO
     auth (user_id, username, hashed_password)
 VALUES
-    (uuid4(), ?, ?) RETURNING *;
+    (?, ?, ?) RETURNING *;
 
 -- name: UpdateUser :one
 UPDATE
