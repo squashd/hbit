@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 
 	"github.com/SQUASHD/hbit"
 	"github.com/SQUASHD/hbit/auth/authdb"
@@ -207,14 +208,44 @@ func (s *service) IsAdmin(ctx context.Context, userId string) (bool, error) {
 	return true, nil
 }
 
-func (s *service) DeleteUser(userId string) error {
-	err := s.queries.DeleteUser(context.Background(), userId)
+func (s *service) DeleteUser(ctx context.Context, userId string) error {
+	err := s.queries.DeleteUser(ctx, userId)
+	if err != nil {
+		return err
+	}
+	event, err := hbit.NewEventMessage(
+		hbit.AUTHDELETE,
+		hbit.UserId(userId),
+		hbit.NewEventIdWithTimestamp("auth"),
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+	err = s.Publish(event, []string{"auth.delete"})
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
+// Publish implements the hbit.Publisher interface
+func (s *service) Publish(event hbit.EventMessage, routingKeys []string) error {
+
+	msg, err := json.Marshal(&event)
+	if err != nil {
+		return err
+	}
+
+	return s.publisher.Publish(
+		msg,
+		routingKeys,
+		rabbitmq.WithPublishOptionsContentType("application/json"),
+		rabbitmq.WithPublishOptionsExchange("events"),
+	)
+}
+
+// Cleanup closes the publisher and the database connection
 func (s *service) Cleanup() error {
 	s.publisher.Close()
 	return s.db.Close()

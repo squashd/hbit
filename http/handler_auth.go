@@ -38,7 +38,10 @@ func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	setAccessCookie(w, dto.AccessToken, h.jwtConf.AccessDuration)
 	setRefreshCookie(w, dto.RefreshToken, h.jwtConf.RefreshDuration)
-	respondWithJSON(w, http.StatusOK, dto)
+
+	// Since we're setting the tokens in the cookie, we can just return the username
+	// in the http response
+	respondWithJSON(w, http.StatusOK, dto.Username)
 }
 
 func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) {
@@ -60,7 +63,9 @@ func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) {
 	setAccessCookie(w, loginDto.AccessToken, h.jwtConf.AccessDuration)
 	setRefreshCookie(w, loginDto.RefreshToken, h.jwtConf.RefreshDuration)
 
-	respondWithJSON(w, http.StatusOK, loginDto)
+	// Since we're setting the tokens in the cookie, we can just return the username
+	// in the http response
+	respondWithJSON(w, http.StatusOK, loginDto.Username)
 }
 
 func (h *authHandler) SignOut(w http.ResponseWriter, r *http.Request) {

@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 
+	"github.com/SQUASHD/hbit"
 	"github.com/SQUASHD/hbit/auth/authdb"
 )
 
@@ -10,6 +11,7 @@ type (
 	Service interface {
 		UserAuth
 		JwtAuth
+		hbit.Publisher
 		IsAdmin(ctx context.Context, userId string) (bool, error)
 		Cleanup() error
 	}
@@ -17,7 +19,10 @@ type (
 	UserAuth interface {
 		Login(ctx context.Context, form LoginForm) (AuthDTO, error)
 		Register(ctx context.Context, form CreateUserForm) (AuthDTO, error)
-		DeleteUser(userId string) error
+		// DeleteUser deletes a user and all associated data and also publsihes an event
+		// Currently only services is orchestrated with registration, but it may be necessary to
+		// orchestrate with other services in the future
+		DeleteUser(ctx context.Context, userId string) error
 	}
 
 	// JwtAuth is the interface for handling JWT tokens

@@ -1,8 +1,8 @@
 -- name: CreateCharacter :one
 INSERT INTO
-    character_state (user_id, class_id)
+    character_state (user_id, class_id, event_id)
 VALUES
-    (?, ?) RETURNING *;
+    (?, ?, ?) RETURNING *;
 
 -- name: ReadCharacter :one
 SELECT
@@ -21,6 +21,7 @@ INSERT INTO
     character_state (
         user_id,
         class_id,
+        event_id,
         character_level,
         experience,
         health,
@@ -31,6 +32,7 @@ INSERT INTO
     )
 VALUES
     (
+        ?,
         ?,
         ?,
         ?,

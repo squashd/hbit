@@ -11,18 +11,19 @@ import (
 
 const createCharacter = `-- name: CreateCharacter :one
 INSERT INTO
-    character_state (user_id, class_id)
+    character_state (user_id, class_id, event_id)
 VALUES
-    (?, ?) RETURNING event_id, user_id, class_id, character_level, experience, health, mana, strength, dexterity, intelligence, timestamp
+    (?, ?, ?) RETURNING event_id, user_id, class_id, character_level, experience, health, mana, strength, dexterity, intelligence, timestamp
 `
 
 type CreateCharacterParams struct {
 	UserID  string `json:"user_id"`
 	ClassID string `json:"class_id"`
+	EventID string `json:"event_id"`
 }
 
 func (q *Queries) CreateCharacter(ctx context.Context, arg CreateCharacterParams) (CharacterState, error) {
-	row := q.db.QueryRowContext(ctx, createCharacter, arg.UserID, arg.ClassID)
+	row := q.db.QueryRowContext(ctx, createCharacter, arg.UserID, arg.ClassID, arg.EventID)
 	var i CharacterState
 	err := row.Scan(
 		&i.EventID,
@@ -89,6 +90,7 @@ INSERT INTO
     character_state (
         user_id,
         class_id,
+        event_id,
         character_level,
         experience,
         health,
@@ -107,6 +109,7 @@ VALUES
         ?,
         ?,
         ?,
+        ?,
         ?
     ) RETURNING event_id, user_id, class_id, character_level, experience, health, mana, strength, dexterity, intelligence, timestamp
 `
@@ -114,6 +117,7 @@ VALUES
 type UpdateCharacterParams struct {
 	UserID         string `json:"user_id"`
 	ClassID        string `json:"class_id"`
+	EventID        string `json:"event_id"`
 	CharacterLevel int64  `json:"character_level"`
 	Experience     int64  `json:"experience"`
 	Health         int64  `json:"health"`
@@ -127,6 +131,7 @@ func (q *Queries) UpdateCharacter(ctx context.Context, arg UpdateCharacterParams
 	row := q.db.QueryRowContext(ctx, updateCharacter,
 		arg.UserID,
 		arg.ClassID,
+		arg.EventID,
 		arg.CharacterLevel,
 		arg.Experience,
 		arg.Health,

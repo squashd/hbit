@@ -31,6 +31,9 @@ func (s *service) List(ctx context.Context) ([]DTO, error) {
 }
 
 func (s *service) CreateCharacter(ctx context.Context, form CreateCharacterForm) (DTO, error) {
+	// Since I'm trying to keep a character state from events
+	// I'll generate a new event id for the character creation
+	form.EventID = string(hbit.NewEventIdWithTimestamp("rpg"))
 	tx, err := s.db.Begin()
 	if err != nil {
 		return DTO{}, &hbit.Error{Code: hbit.EINTERNAL, Message: "failed to start transaction"}

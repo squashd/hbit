@@ -77,7 +77,8 @@ func (h *characterHandler) CharacterUpdate(w http.ResponseWriter, r *http.Reques
 }
 
 func (h *characterHandler) CharacterDelete(w http.ResponseWriter, r *http.Request, requestedById string) {
-	if err := h.charSvc.DeleteCharacter(r.Context(), requestedById); err != nil {
+	userId := r.PathValue("userId")
+	if err := h.charSvc.DeleteCharacter(r.Context(), userId); err != nil {
 		Error(w, r, err)
 		return
 	}
