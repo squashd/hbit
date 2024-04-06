@@ -11,16 +11,15 @@ func NewRPGRouter(charSvc character.CharacterService, questSvc quest.QuestServic
 	rpgRouter := http.NewServeMux()
 	rpgHandler := newCharacterHandler(charSvc)
 
-	userGetter := GetUserIdFromHeader
-	AuthMiddleware := AuthChainMiddleware(userGetter)
+	userIdGetter := GetUserIdFromHeader
+	userAuthMiddleware := AuthChainMiddleware(userIdGetter)
 
-	rpgRouter.HandleFunc("GET /characters", AuthMiddleware(rpgHandler.CharacterGet))
-	rpgRouter.HandleFunc("POST /characters", AuthMiddleware(rpgHandler.CharacterCreate))
-	rpgRouter.HandleFunc("PUT /characters", AuthMiddleware(rpgHandler.CharacterUpdate))
-	rpgRouter.HandleFunc("DELETE /characters", AuthMiddleware(rpgHandler.CharacterDelete))
+	rpgRouter.HandleFunc("GET /characters", userAuthMiddleware(rpgHandler.CharacterGet))
+	rpgRouter.HandleFunc("POST /characters", userAuthMiddleware(rpgHandler.CharacterCreate))
+	rpgRouter.HandleFunc("PUT /characters", userAuthMiddleware(rpgHandler.CharacterUpdate))
 
 	questHandler := newQuestHandler(questSvc)
-	rpgRouter.HandleFunc("GET /quests", AuthMiddleware(questHandler.GetAll))
+	rpgRouter.HandleFunc("GET /quests", userAuthMiddleware(questHandler.GetAll))
 
 	return rpgRouter
 }
