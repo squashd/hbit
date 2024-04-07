@@ -1,4 +1,4 @@
-# hbit
+# hbit - work in progress
 
 hbit is a gamified task management application, built with Go and RabbitMQ
 on the backend and NextJS and Tailwind on the frontend.
@@ -39,7 +39,7 @@ openssl rand -base64 32
 - [x] Set up reverse proxy / API gateway
 - [x] Orchestrate tasks with RPG resolution and registration (kinda)
 - [ ] Implement quest mechanics
-- [ ] Set up a show (?)
+- [ ] Set up a shop (quests, items?) 
 - [ ] Make a purdy frontend
 - [ ] ???
 - [ ] Profit
