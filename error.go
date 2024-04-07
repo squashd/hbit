@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+// This centralization of error handling is lifted directly from wtf:
+// https://github.com/benbjohnson/wtf
 type AppError string
 
 const (
