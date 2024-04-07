@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/SQUASHD/hbit"
 	"github.com/SQUASHD/hbit/auth"
 	"github.com/SQUASHD/hbit/config"
 )
@@ -23,10 +24,8 @@ func newAuthHandler(authSvc auth.Service, jwtConf config.JwtOptions) *authHandle
 func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var form auth.CreateUserForm
 
-	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&form)
-	if err != nil {
-		Error(w, r, err)
+	if err := json.NewDecoder(r.Body).Decode(&form); err != nil {
+		Error(w, r, &hbit.Error{Code: hbit.EINVALID, Message: "Invalid JSON Body"})
 		return
 	}
 
@@ -47,10 +46,8 @@ func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
 func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var form auth.LoginForm
 
-	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&form)
-	if err != nil {
-		Error(w, r, err)
+	if err := json.NewDecoder(r.Body).Decode(&form); err != nil {
+		Error(w, r, &hbit.Error{Code: hbit.EINVALID, Message: "Invalid JSON Body"})
 		return
 	}
 
@@ -76,14 +73,12 @@ func (h *authHandler) SignOut(w http.ResponseWriter, r *http.Request) {
 func (h *authHandler) Revoke(w http.ResponseWriter, r *http.Request) {
 	var form auth.RevokeTokenForm
 
-	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&form)
-	if err != nil {
-		Error(w, r, err)
+	if err := json.NewDecoder(r.Body).Decode(&form); err != nil {
+		Error(w, r, &hbit.Error{Code: hbit.EINVALID, Message: "Invalid JSON Body"})
 		return
 	}
 
-	err = h.authSvc.RevokeToken(r.Context(), form)
+	err := h.authSvc.RevokeToken(r.Context(), form)
 	if err != nil {
 		Error(w, r, err)
 		return
@@ -94,13 +89,19 @@ func (h *authHandler) Revoke(w http.ResponseWriter, r *http.Request) {
 
 func Verify(svc auth.Service, jwtConf config.JwtOptions) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userId, err := authenticateUser(w, r, svc, jwtConf)
+		_, err := authenticateUser(w, r, svc, jwtConf)
 		if err != nil {
 			Error(w, r, err)
 			return
 		}
-		r.Header.Set("X-User-Id", userId)
-		respondWithJSON(w, http.StatusOK, map[string]string{"message": "Successfully verified token"})
+
+		authRes := struct {
+			message string
+		}{
+			message: "Successfully verified token",
+		}
+
+		respondWithJSON(w, http.StatusOK, authRes)
 	}
 }
 

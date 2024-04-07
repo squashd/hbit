@@ -40,7 +40,7 @@ func NewRegistrationOrchestrator(
 func (o *orchestratorReg) OrchestrateRegistration(w http.ResponseWriter, r *http.Request) {
 	var form auth.CreateUserForm
 	if err := json.NewDecoder(r.Body).Decode(&form); err != nil {
-		Error(w, r, err)
+		Error(w, r, &hbit.Error{Code: hbit.EINVALID, Message: "Invalid JSON Body"})
 		return
 	}
 

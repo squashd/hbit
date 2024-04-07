@@ -2,6 +2,7 @@ package task
 
 import "github.com/SQUASHD/hbit"
 
+// TODO: implement for repeat dailies
 func validateRepeatSchedule(taskSchedule map[Day]bool) error {
 	defaultTaskMap := getDefaultSchedule()
 	for day := range defaultTaskMap {

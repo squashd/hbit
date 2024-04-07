@@ -1,6 +1,8 @@
 package http
 
 import (
+	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 	"strings"
@@ -8,8 +10,8 @@ import (
 	"github.com/SQUASHD/hbit"
 )
 
-// This centralization of error handling is lifted directly from wtf:
-// https://github.com/benbjohnson/wtf
+// This centralization of error handling is lifted directly from hbit:
+// https://github.com/benbjohnson/hbit
 // I really like it
 var codes = map[hbit.AppError]int{
 	hbit.ECONFLICT:       http.StatusConflict,
@@ -75,3 +77,26 @@ type ErrorResponse struct {
 }
 
 var ErrServerClosed = http.ErrServerClosed
+
+func parseResponseError(resp *http.Response) error {
+	defer resp.Body.Close()
+
+	// Read the response body so we can reuse it for the error message if it
+	// fails to decode as JSON.
+	buf, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	// Parse JSON formatted error response.
+	// If not JSON, use the response body as the error message.
+	var errorResponse ErrorResponse
+	if err := json.Unmarshal(buf, &errorResponse); err != nil {
+		message := strings.TrimSpace(string(buf))
+		if message == "" {
+			message = "Empty response from server."
+		}
+		return hbit.Errorf(FromErrorStatusCode(resp.StatusCode), message)
+	}
+	return hbit.Errorf(FromErrorStatusCode(resp.StatusCode), errorResponse.Error)
+}

@@ -9,12 +9,13 @@ import (
 )
 
 type Task struct {
-	ID        string      `json:"id"`
-	UserID    string      `json:"user_id"`
-	Title     string      `json:"title"`
-	Text      string      `json:"text"`
-	Data      interface{} `json:"data"`
-	TaskType  string      `json:"task_type"`
-	CreatedAt time.Time   `json:"created_at"`
-	UpdatedAt time.Time   `json:"updated_at"`
+	ID          string    `json:"id"`
+	UserID      string    `json:"user_id"`
+	Title       string    `json:"title"`
+	Text        string    `json:"text"`
+	IsCompleted bool      `json:"is_completed"`
+	TaskType    string    `json:"task_type"`
+	Difficulty  string    `json:"difficulty"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }

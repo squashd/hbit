@@ -40,16 +40,16 @@ func (h *taskHandler) Create(w http.ResponseWriter, r *http.Request, requestedBy
 	var data task.CreateTaskRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
-		Error(w, r, &hbit.Error{Message: "invalid task payload", Code: hbit.EINVALID})
+		Error(w, r, &hbit.Error{Message: "Invalid JSON Body", Code: hbit.EINVALID})
 		return
 	}
 
-	form := task.CreateTaskForm{
+	taskState := task.CreateTaskForm{
 		CreateTaskRequest: data,
 		RequestedById:     requestedById,
 	}
 
-	todo, err := h.taskSvc.Create(r.Context(), form)
+	todo, err := h.taskSvc.Create(r.Context(), taskState)
 	if err != nil {
 		Error(w, r, err)
 		return
@@ -59,7 +59,7 @@ func (h *taskHandler) Create(w http.ResponseWriter, r *http.Request, requestedBy
 }
 
 func (h *taskHandler) Update(w http.ResponseWriter, r *http.Request, requestedById string) {
-	id := r.PathValue("id")
+	taskId := r.PathValue("taskId")
 	var data taskdb.UpdateTaskParams
 
 	decoder := json.NewDecoder(r.Body)
@@ -68,13 +68,13 @@ func (h *taskHandler) Update(w http.ResponseWriter, r *http.Request, requestedBy
 		return
 	}
 
-	form := task.UpdateTaskForm{
+	taskState := task.UpdateTaskForm{
 		UpdateTaskParams: data,
-		TaskId:           id,
+		TaskId:           taskId,
 		RequestedById:    requestedById,
 	}
 
-	todo, err := h.taskSvc.Update(r.Context(), form)
+	todo, err := h.taskSvc.Update(r.Context(), taskState)
 	if err != nil {
 		Error(w, r, err)
 		return
@@ -84,18 +84,52 @@ func (h *taskHandler) Update(w http.ResponseWriter, r *http.Request, requestedBy
 }
 
 func (h *taskHandler) Delete(w http.ResponseWriter, r *http.Request, requestedById string) {
-	id := r.PathValue("id")
+	taskId := r.PathValue("taskId")
 
-	form := task.DeleteTaskForm{
-		TaskId:        id,
+	taskState := task.DeleteTaskForm{
+		TaskId:        taskId,
 		RequestedById: requestedById,
 	}
 
-	err := h.taskSvc.Delete(r.Context(), form)
+	err := h.taskSvc.Delete(r.Context(), taskState)
 	if err != nil {
 		Error(w, r, err)
 		return
 	}
 
 	respondWithJSON(w, http.StatusOK, map[string]string{"result": "success"})
+}
+
+func (h *taskHandler) Done(w http.ResponseWriter, r *http.Request) {
+	var taskState task.TaskStatePayload
+
+	if err := json.NewDecoder(r.Body).Decode(&taskState); err != nil {
+		Error(w, r, &hbit.Error{Code: hbit.EINVALID, Message: "Invalid JSON Body"})
+		return
+	}
+
+	task, err := h.taskSvc.TaskDone(r.Context(), taskState)
+	if err != nil {
+		Error(w, r, err)
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, task)
+}
+
+func (h *taskHandler) Undone(w http.ResponseWriter, r *http.Request) {
+	var taskState task.TaskStatePayload
+
+	if err := json.NewDecoder(r.Body).Decode(&taskState); err != nil {
+		Error(w, r, &hbit.Error{Code: hbit.EINVALID, Message: "Invalid JSON Body"})
+		return
+	}
+
+	task, err := h.taskSvc.TaskUndone(r.Context(), taskState)
+	if err != nil {
+		Error(w, r, err)
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, task)
 }

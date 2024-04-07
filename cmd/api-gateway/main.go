@@ -46,6 +46,7 @@ func main() {
 			gateway,
 			http.CORSMiddleware,
 			http.LoggerMiddleware,
+			http.SetInternalHeaderMiddleware,
 		),
 		http.WithServerOptionsPortFromEnv("API_GATEWAY_PORT"),
 	)

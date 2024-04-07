@@ -14,37 +14,27 @@ import (
 func main() {
 	var errs []error
 	var wg sync.WaitGroup
+	var rpgDownErr, userDownErr, featDownErr, taskDownErr error
 	wg.Add(4)
 	go func() {
 		defer wg.Done()
-		rpgDownErr := rpg.DatabaseDown()
-		if rpgDownErr != nil {
-			errs = append(errs, rpgDownErr)
-		}
+		rpgDownErr = rpg.DatabaseDown()
 	}()
 	go func() {
 		defer wg.Done()
-		userDownErr := user.DatabaseDown()
-		if userDownErr != nil {
-			errs = append(errs, userDownErr)
-		}
+		userDownErr = user.DatabaseDown()
 	}()
 	go func() {
 		defer wg.Done()
-		featDownErr := feat.DatabaseDown()
-		if featDownErr != nil {
-			errs = append(errs, featDownErr)
-		}
+		featDownErr = feat.DatabaseDown()
 	}()
 	go func() {
 		defer wg.Done()
-		taskDownErr := task.DatabaseDown()
-		if taskDownErr != nil {
-			errs = append(errs, taskDownErr)
-		}
+		taskDownErr = task.DatabaseDown()
 	}()
+	wg.Wait()
 
-	for _, err := range errs {
+	for _, err := range []error{rpgDownErr, userDownErr, featDownErr, taskDownErr} {
 		if err != nil {
 			errs = append(errs, err)
 		}

@@ -5,7 +5,6 @@ import (
 
 	"github.com/SQUASHD/hbit"
 	"github.com/SQUASHD/hbit/rpg"
-	"github.com/SQUASHD/hbit/task"
 	"github.com/wagslane/go-rabbitmq"
 )
 
@@ -30,7 +29,7 @@ func NewRPGEventConsumer(url string) (*rabbitmq.Consumer, *rabbitmq.Conn, error)
 	return consumer, conn, nil
 }
 
-func RPGMessageHandler(svc rpg.EventService) func(d rabbitmq.Delivery) rabbitmq.Action {
+func RPGMessageHandler(svc rpg.Service) func(d rabbitmq.Delivery) rabbitmq.Action {
 	return func(d rabbitmq.Delivery) rabbitmq.Action {
 		var event hbit.EventMessage
 		if err := json.Unmarshal(d.Body, &event); err != nil {
@@ -38,14 +37,6 @@ func RPGMessageHandler(svc rpg.EventService) func(d rabbitmq.Delivery) rabbitmq.
 		}
 		switch event.Type {
 		case hbit.TASKDONE:
-			var payload task.TaskDonePayload
-			err := json.Unmarshal(event.Payload, &payload)
-			if err != nil {
-				return rabbitmq.NackDiscard
-			}
-			if err := svc.HandleTaskCompleted(event.UserId, payload.Difficulty); err != nil {
-				return rabbitmq.NackDiscard
-			}
 			return rabbitmq.Ack
 		default:
 			return rabbitmq.NackDiscard

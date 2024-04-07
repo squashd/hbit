@@ -14,7 +14,7 @@ const createTask = `-- name: CreateTask :one
 INSERT INTO
     task (id, user_id, title)
 VALUES
-    (uuid4(), ?, ?) RETURNING id, user_id, title, text, data, task_type, created_at, updated_at
+    (uuid4(), ?, ?) RETURNING id, user_id, title, text, is_completed, task_type, difficulty, created_at, updated_at
 `
 
 type CreateTaskParams struct {
@@ -30,8 +30,9 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 		&i.UserID,
 		&i.Title,
 		&i.Text,
-		&i.Data,
+		&i.IsCompleted,
 		&i.TaskType,
+		&i.Difficulty,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -64,7 +65,7 @@ func (q *Queries) DeleteUserTasks(ctx context.Context, userID string) error {
 
 const listTasks = `-- name: ListTasks :many
 SELECT
-    id, user_id, title, text, data, task_type, created_at, updated_at
+    id, user_id, title, text, is_completed, task_type, difficulty, created_at, updated_at
 FROM
     task
 WHERE
@@ -85,8 +86,9 @@ func (q *Queries) ListTasks(ctx context.Context, userID string) ([]Task, error) 
 			&i.UserID,
 			&i.Title,
 			&i.Text,
-			&i.Data,
+			&i.IsCompleted,
 			&i.TaskType,
+			&i.Difficulty,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -105,7 +107,7 @@ func (q *Queries) ListTasks(ctx context.Context, userID string) ([]Task, error) 
 
 const readTask = `-- name: ReadTask :one
 SELECT
-    id, user_id, title, text, data, task_type, created_at, updated_at
+    id, user_id, title, text, is_completed, task_type, difficulty, created_at, updated_at
 FROM
     task
 WHERE
@@ -120,8 +122,9 @@ func (q *Queries) ReadTask(ctx context.Context, id string) (Task, error) {
 		&i.UserID,
 		&i.Title,
 		&i.Text,
-		&i.Data,
+		&i.IsCompleted,
 		&i.TaskType,
+		&i.Difficulty,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -134,23 +137,29 @@ UPDATE
 SET
     title = ?,
     text = ?,
-    updated_at = ?
+    is_completed = ?,
+    updated_at = ?,
+    difficulty = ?
 WHERE
-    id = ? RETURNING id, user_id, title, text, data, task_type, created_at, updated_at
+    id = ? RETURNING id, user_id, title, text, is_completed, task_type, difficulty, created_at, updated_at
 `
 
 type UpdateTaskParams struct {
-	Title     string    `json:"title"`
-	Text      string    `json:"text"`
-	UpdatedAt time.Time `json:"updated_at"`
-	ID        string    `json:"id"`
+	Title       string    `json:"title"`
+	Text        string    `json:"text"`
+	IsCompleted bool      `json:"is_completed"`
+	UpdatedAt   time.Time `json:"updated_at"`
+	Difficulty  string    `json:"difficulty"`
+	ID          string    `json:"id"`
 }
 
 func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, error) {
 	row := q.db.QueryRowContext(ctx, updateTask,
 		arg.Title,
 		arg.Text,
+		arg.IsCompleted,
 		arg.UpdatedAt,
+		arg.Difficulty,
 		arg.ID,
 	)
 	var i Task
@@ -159,8 +168,9 @@ func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, e
 		&i.UserID,
 		&i.Title,
 		&i.Text,
-		&i.Data,
+		&i.IsCompleted,
 		&i.TaskType,
+		&i.Difficulty,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

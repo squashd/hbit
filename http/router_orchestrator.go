@@ -12,9 +12,10 @@ func NewTaskOrchestrationRouter(client *http.Client) *http.ServeMux {
 		os.Getenv("RPG_SVC_URL"),
 		client,
 	)
-	authMiddleware := AuthChainMiddleware(GetUserIdFromHeader)
-	router.HandleFunc("POST /{id}/done", authMiddleware(orchestrator.OrchestrateTaskDone))
-	router.HandleFunc("POST /{id}/undone", authMiddleware(orchestrator.OrchestrateTaskUndo))
+	userGetter := GetUserIdFromHeader
+	AuthMiddleware := AuthChainMiddleware(userGetter)
+	router.HandleFunc("POST /{id}/done", AuthMiddleware(orchestrator.OrchestrateTaskDone))
+	router.HandleFunc("POST /{id}/undo", AuthMiddleware(orchestrator.OrchestrateTaskUndo))
 
 	return router
 }

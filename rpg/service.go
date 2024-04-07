@@ -12,8 +12,9 @@ import (
 )
 
 type (
-	EventService interface {
-		HandleTaskCompleted(userId hbit.UserId, difficulty task.TaskDifficulty) error
+	Service interface {
+		CalculateRewards(userId string, difficulty task.TaskDifficulty) (TaskRewardPayload, error)
+		UndoRewards(userId string, difficulty task.TaskDifficulty) (TaskRewardPayload, error)
 		hbit.Publisher
 		hbit.UserDataHandler
 	}
@@ -48,7 +49,7 @@ func NewService(
 	publisher *rabbitmq.Publisher,
 	queries *rpgdb.Queries,
 	db *sql.DB,
-) EventService {
+) Service {
 	return &rpgService{
 		publisher: publisher,
 		queries:   queries,
@@ -56,32 +57,32 @@ func NewService(
 	}
 }
 
-func (s *rpgService) HandleTaskCompleted(
-	userId hbit.UserId,
+func (s *rpgService) CalculateRewards(
+	userId string,
 	difficulty task.TaskDifficulty,
-) error {
-	char, err := s.queries.ReadCharacter(context.Background(), userId.String())
+) (TaskRewardPayload, error) {
+	char, err := s.queries.ReadCharacter(context.Background(), userId)
 	if err != nil {
-		return err
+		return TaskRewardPayload{}, err
 	}
 
 	// TODO: check character's current quest and state
 	reward := determineReward(char, difficulty)
-	msg, err := hbit.NewEventMessage(
-		hbit.RPGREWARD,
-		userId,
-		hbit.NewEventIdWithTimestamp("rpg"),
-		reward,
-	)
+
+	// TODO: update character's state, publish event and determine rollback strategy
+	return reward, nil
+}
+
+func (s *rpgService) UndoRewards(
+	userId string,
+	difficulty task.TaskDifficulty,
+) (TaskRewardPayload, error) {
+	_, err := s.queries.ReadCharacter(context.Background(), userId)
 	if err != nil {
-		return err
+		return TaskRewardPayload{}, err
 	}
 
-	err = s.Publish(msg, []string{"rpg.reward"})
-	if err != nil {
-		return err
-	}
-	return nil
+	return TaskRewardPayload{}, nil
 }
 
 func (s *rpgService) Publish(event hbit.EventMessage, routingKeys []string) error {

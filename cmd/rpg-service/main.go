@@ -44,7 +44,7 @@ func main() {
 	}
 	defer conn.Close()
 
-	rpgRouter := http.NewRPGRouter(characterSvc, questSvc)
+	rpgRouter := http.NewRPGRouter(characterSvc, questSvc, rpgSvc)
 	wrappedRouter := http.ChainMiddleware(
 		rpgRouter,
 	)

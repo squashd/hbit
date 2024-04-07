@@ -34,7 +34,7 @@ func SetUpAPIGateway(
 	// Auth handler is set here since we do authentication at the gateway level
 	authHandler := newAuthHandler(authSvc, jwtConf)
 	// Orchestrator for tasks
-	orchestratorRouter := NewTaskOrchestrationRouter(&http.Client{})
+	taskOrchestrator := NewTaskOrchestrationRouter(&http.Client{})
 	// Orchestrator for registration
 	registrationOrch := NewRegistrationOrchestrator(authSvc, os.Getenv("RPG_SVC_URL"), &http.Client{})
 
@@ -42,22 +42,35 @@ func SetUpAPIGateway(
 	// Centralizing authentication and registration
 	// These routes are not authenticated
 	entry := http.NewServeMux()
-	entry.HandleFunc("POST /login", authHandler.Login)
-	entry.HandleFunc("POST /register", registrationOrch.OrchestrateRegistration)
-
 	gateway := http.NewServeMux()
-	authMiddleware := JwtAuthRouterMiddleware(authSvc, jwtConf)
 
-	gateway.Handle("/users/", authMiddleware(http.StripPrefix("/users", userSvcProxy)))
-	gateway.Handle("/feats/", authMiddleware(http.StripPrefix("/feats", featsSvcProxy)))
-	gateway.Handle("/rpg/", authMiddleware(http.StripPrefix("/rpg", rpgSvcProxy)))
-
-	// Since the tasks done and undo are the driver of events, I'm going to orchestrate
-	// the events to provide a unified response to the client.
-	gateway.Handle("/tasks/{id}", authMiddleware(http.StripPrefix("/tasks", orchestratorRouter)))
-	gateway.Handle("/tasks/", authMiddleware(http.StripPrefix("/tasks", taskSvcProxy)))
+	// Catch all route
+	entry.HandleFunc("/", notFound)
 
 	gateway.Handle("/auth/", http.StripPrefix("/auth", entry))
+
+	// Auth / unprotected routes
+	entry.HandleFunc("POST /login", authHandler.Login)
+	entry.HandleFunc("POST /register", registrationOrch.OrchestrateRegistration)
+	entry.HandleFunc("GET /verify", Verify(authSvc, jwtConf))
+
+	authMiddleware := JwtAuthRouterMiddleware(authSvc, jwtConf)
+
+	// Settings and soonTM profiles
+	gateway.Handle("/user/", authMiddleware(http.StripPrefix("/user", userSvcProxy)))
+
+	// Achievements/feats driven by events
+	gateway.Handle("/feats/", authMiddleware(http.StripPrefix("/feats", featsSvcProxy)))
+
+	// RPG service - driven by task completion but managed independently
+	gateway.Handle("/rpg/", authMiddleware(http.StripPrefix("/rpg", rpgSvcProxy)))
+
+	// Since the tasks done and undo are the driver of events, they are handled by the orchestrator
+	// to provide a unified response to the client.
+	gateway.Handle("POST /tasks/{id}/{action}", authMiddleware(http.StripPrefix("/tasks", taskOrchestrator)))
+
+	// Generic task management
+	gateway.Handle("/tasks/", authMiddleware(http.StripPrefix("/tasks", taskSvcProxy)))
 
 	return gateway, nil
 }

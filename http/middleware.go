@@ -28,6 +28,45 @@ type customResponseWriter struct {
 	statusCode int
 }
 
+// internalAuthMiddleware is a middleware that check if the 'X-Internal-Request'
+// header is set to 'true'. This is by default set to 'false' in the SetInternalHeaderMiddleware
+// which is wrapped around the gateway router
+func internalAuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		err := getInternalHeader(r)
+		if err != nil {
+			Error(w, r, err)
+			return
+		}
+		next(w, r)
+	}
+}
+
+// SetInternalHeaderMiddleware sets the 'X-Internal-Request' header to 'false'
+// This ensures that we can proctect some routes from being accessed via the API Gateway
+// even by authenticated users
+func SetInternalHeaderMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.Header.Set("X-Internal-Request", "false")
+		next.ServeHTTP(w, r)
+	})
+}
+
+// getInternalHeader is a helper function for InternalAuthMiddleware
+func getInternalHeader(r *http.Request) error {
+	internal := r.Header.Get("X-Internal-Request")
+	if internal == "" || internal == "false" {
+		log.Printf("Unauthorized request: %s", r.URL.Path)
+		return &hbit.Error{Code: hbit.EUNAUTHORIZED, Message: "Unauthorized"}
+	}
+	return nil
+}
+
+// setInternalHeader is a helper function for SetInternalHeaderMiddleware
+func setInternalHeader(r *http.Request) {
+	r.Header.Set("X-Internal-Request", "true")
+}
+
 // NewCustomResponseWriter was middleware used to note the status code of the response
 // Howver, it causes issues when using an API Gateway
 func NewCustomResponseWriter(w http.ResponseWriter) *customResponseWriter {
@@ -84,6 +123,7 @@ func AuthMiddleware(next AuthedHandler) http.HandlerFunc {
 func GetUserIdFromHeader(r *http.Request) (string, error) {
 	userId := r.Header.Get("X-User-Id")
 	if userId == "" {
+		log.Printf("Unauthorized request: %s", r.URL.Path)
 		return "", &hbit.Error{Code: hbit.EUNAUTHORIZED, Message: "Missing user id header"}
 	}
 	return userId, nil
@@ -129,7 +169,7 @@ func authenticateUser(w http.ResponseWriter, r *http.Request, svc auth.JwtAuth, 
 	// If refresh token is missing, clear all tokens and return error
 	if refreshToken == "" {
 		clearTokensFromCookie(w)
-		return "", &hbit.Error{Code: hbit.EUNAUTHORIZED, Message: "Missing refresh token"}
+		return "", &hbit.Error{Code: hbit.EUNAUTHORIZED, Message: "Missing tokens"}
 	}
 	// If access token is missing, refresh token
 	if accessToken == "" {

@@ -10,11 +10,14 @@ func NewTaskRouter(svc task.UserTaskService) *http.ServeMux {
 	router := http.NewServeMux()
 	handler := newTaskHandler(svc)
 	userGetter := GetUserIdFromHeader
-	AuthMiddleware := AuthChainMiddleware(userGetter)
+	authMiddleware := AuthChainMiddleware(userGetter)
 
-	router.HandleFunc("GET /", AuthMiddleware(handler.FindAll))
-	router.HandleFunc("POST /", AuthMiddleware(handler.Create))
-	router.HandleFunc("PUT /", AuthMiddleware(handler.Update))
-	router.HandleFunc("DELETE /", AuthMiddleware(handler.Delete))
+	router.HandleFunc("GET /", authMiddleware(handler.FindAll))
+	router.HandleFunc("POST /", authMiddleware(handler.Create))
+	router.HandleFunc("PUT /", authMiddleware(handler.Update))
+	router.HandleFunc("DELETE /", authMiddleware(handler.Delete))
+
+	router.HandleFunc("POST /done", internalAuthMiddleware(handler.Done))
+	router.HandleFunc("POST /undo", internalAuthMiddleware(handler.Undone))
 	return router
 }

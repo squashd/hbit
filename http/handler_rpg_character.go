@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/SQUASHD/hbit"
 	"github.com/SQUASHD/hbit/rpg/character"
 	"github.com/SQUASHD/hbit/rpg/rpgdb"
 )
@@ -28,9 +29,8 @@ func (h *characterHandler) CharacterGet(w http.ResponseWriter, r *http.Request, 
 func (h *characterHandler) CharacterCreate(w http.ResponseWriter, r *http.Request, requestedById string) {
 	var data rpgdb.CreateCharacterParams
 
-	decoder := json.NewDecoder(r.Body)
-	if err := decoder.Decode(&data); err != nil {
-		Error(w, r, err)
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		Error(w, r, &hbit.Error{Code: hbit.EINVALID, Message: "Invalid JSON Body"})
 		return
 	}
 
@@ -55,9 +55,9 @@ func (h *characterHandler) CharacterUpdate(w http.ResponseWriter, r *http.Reques
 	id := r.PathValue("id")
 
 	var data rpgdb.UpdateCharacterParams
-	decoder := json.NewDecoder(r.Body)
-	if err := decoder.Decode(&data); err != nil {
-		Error(w, r, err)
+
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		Error(w, r, &hbit.Error{Code: hbit.EINVALID, Message: "Invalid JSON Body"})
 		return
 	}
 

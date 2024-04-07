@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/SQUASHD/hbit"
 	"github.com/SQUASHD/hbit/user"
 	"github.com/SQUASHD/hbit/user/userdb"
 )
@@ -27,16 +28,15 @@ func (h *userHandler) SettingsGet(w http.ResponseWriter, r *http.Request, reques
 }
 
 func (h *userHandler) SettingsUpdate(w http.ResponseWriter, r *http.Request, requestedById string) {
-	var data userdb.UpdateUserSettingsParams
+	var request userdb.UpdateUserSettingsParams
 
-	decoder := json.NewDecoder(r.Body)
-	if err := decoder.Decode(&data); err != nil {
-		Error(w, r, err)
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		Error(w, r, &hbit.Error{Code: hbit.EINVALID, Message: "Invalid JSON Body"})
 		return
 	}
 
 	form := user.UpdateSettingsForm{
-		UpdateUserSettingsParams: data,
+		UpdateUserSettingsParams: request,
 		RequestedById:            requestedById,
 	}
 

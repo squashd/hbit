@@ -2,7 +2,9 @@ package http
 
 import (
 	"net/http"
+	"time"
 
+	"github.com/SQUASHD/hbit"
 	"github.com/SQUASHD/hbit/rpg/character"
 	"github.com/SQUASHD/hbit/task"
 )
@@ -13,7 +15,15 @@ import (
 func NewTypesRouter() *http.ServeMux {
 	r := http.NewServeMux()
 	r.HandleFunc("GET /task", func(w http.ResponseWriter, r *http.Request) {
-		taskDTO := task.DTO{}
+		taskDTO := task.DTO{
+			ID:          hbit.NewUUID(),
+			UserID:      hbit.NewUUID(),
+			Title:       "My first task",
+			Text:        "This is longer text in the task",
+			IsCompleted: false,
+			Difficulty:  string(task.EASY),
+			CreatedAt:   time.Time{},
+			UpdatedAt:   time.Time{}}
 		respondWithJSON(w, http.StatusOK, taskDTO)
 	})
 	r.HandleFunc("GET /character", func(w http.ResponseWriter, r *http.Request) {
@@ -30,8 +40,7 @@ func NewTypesRouter() *http.ServeMux {
 	})
 	r.HandleFunc("GET /taskpayload", func(w http.ResponseWriter, r *http.Request) {
 		var taskDoneReq struct {
-			task.UpdateTaskForm
-			task.TaskDonePayload
+			hbit.TaskOrchestrationRequest
 		}
 		respondWithJSON(w, http.StatusOK, taskDoneReq)
 	})

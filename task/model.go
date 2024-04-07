@@ -26,18 +26,21 @@ type (
 	Day        string
 
 	DTO struct {
-		ID        string    `json:"id"`
-		Title     string    `json:"title"`
-		Text      string    `json:"text"`
-		Data      string    `json:"data"`
-		TaskType  string    `json:"task_type"`
-		CreatedAt time.Time `json:"created_at"`
-		UpdatedAt time.Time `json:"updated_at"`
+		ID          string    `json:"id"`
+		UserID      string    `json:"user_id"`
+		Title       string    `json:"title"`
+		Text        string    `json:"text"`
+		IsCompleted bool      `json:"is_completed"`
+		Difficulty  string    `json:"difficulty"`
+		CreatedAt   time.Time `json:"created_at"`
+		UpdatedAt   time.Time `json:"updated_at"`
 	}
 
 	CreateTaskRequest struct {
 		Title string `json:"title"`
 	}
+
+	UpdateTaskRequest struct{}
 )
 
 func CreateFormtoModel(form CreateTaskForm) taskdb.CreateTaskParams {
@@ -49,12 +52,13 @@ func CreateFormtoModel(form CreateTaskForm) taskdb.CreateTaskParams {
 
 func toDTO(task taskdb.Task) DTO {
 	return DTO{
-		ID:        task.ID,
-		Title:     task.Title,
-		Text:      task.Text,
-		TaskType:  task.TaskType,
-		CreatedAt: task.CreatedAt,
-		UpdatedAt: task.UpdatedAt,
+		ID:          task.ID,
+		Title:       task.Title,
+		Text:        task.Text,
+		IsCompleted: task.IsCompleted,
+		Difficulty:  task.Difficulty,
+		CreatedAt:   task.CreatedAt,
+		UpdatedAt:   task.UpdatedAt,
 	}
 }
 

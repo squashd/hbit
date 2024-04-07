@@ -33,6 +33,13 @@ type (
 		Create(ctx context.Context, form CreateTaskForm) (DTO, error)
 		Update(ctx context.Context, form UpdateTaskForm) (DTO, error)
 		Delete(ctx context.Context, form DeleteTaskForm) error
+		TaskDone(ctx context.Context, payload TaskStatePayload) (DTO, error)
+		TaskUndone(ctx context.Context, payload TaskStatePayload) (DTO, error)
+	}
+
+	TaskStatePayload struct {
+		TaskId string `json:"taskId"`
+		UserId string `json:"userId"`
 	}
 
 	InternalService interface {

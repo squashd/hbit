@@ -26,9 +26,7 @@ UPDATE
 SET
     title = ?,
     text = ?,
-    is_completed = ?,
-    updated_at = ?,
-    difficulty = ?
+    updated_at = ?
 WHERE
     id = ? RETURNING *;
 

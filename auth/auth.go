@@ -42,7 +42,8 @@ type (
 		RequesterId string `json:"requester_id"`
 	}
 
-	// Since we are orchestrating registration we need to supply the user id
+	// CreateUserForm requires a UserId as registration may now be orchestrated
+	// with other services to ensure the application is a consistent state
 	CreateUserForm struct {
 		UserID          string `json:"userId"`
 		Username        string `json:"username"`
