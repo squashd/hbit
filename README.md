@@ -51,11 +51,5 @@ application with gamified rpg elements. It started as an exploration of
 resource driven design. Not for any particular architectural fit, just as a
 point of reference of what an end application could or should look like.
 
-I quickly realized I'd made a poor decision and moved on to trying an
-event-based microservices architecture... which I did poorly. The RPG service
-became wholly dependent on the task service as a driver of events which meant
-I had to asynchronously update the user. For this I decided to use a websocket
-connection (?!?). But what better way to learn than to fail.
-
 The architecture as of now (2024-07-04) consists of an API gateway with an
 auth service and orchestration between registration and task resolutions (do/undo).
