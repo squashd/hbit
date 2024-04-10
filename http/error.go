@@ -12,7 +12,6 @@ import (
 
 // This centralization of error handling is lifted directly from wtf:
 // https://github.com/benbjohnson/wtf
-// I really like it
 var codes = map[hbit.AppError]int{
 	hbit.ECONFLICT:       http.StatusConflict,
 	hbit.EINVALID:        http.StatusBadRequest,

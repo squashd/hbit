@@ -18,8 +18,10 @@ type featRouter struct {
 func (s *featRouter) RegisterRoutes() *http.ServeMux {
 	mux := http.NewServeMux()
 	handler := newFeatHandler(s.svc)
+
 	userGetter := GetUserIdFromHeader
 	AuthMiddleware := AuthChainMiddleware(userGetter)
-	mux.HandleFunc("/", AuthMiddleware(handler.FeatsGet))
+
+	mux.HandleFunc("GET /", AuthMiddleware(handler.FeatsGet))
 	return mux
 }

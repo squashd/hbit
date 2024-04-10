@@ -197,8 +197,12 @@ ALTER TABLE
 ALTER TABLE
     user_quest RENAME TO user_quest_backup_temp;
 
-ALTER TABLE
-    user_quest_backup RENAME TO user_quest;
+CREATE TABLE IF NOT EXISTS user_quest (
+    user_id TEXT NOT NULL,
+    quest_id TEXT NOT NULL,
+    completed BOOLEAN NOT NULL DEFAULT FALSE,
+    PRIMARY KEY (user_id, quest_id)
+);
 
 INSERT INTO
     user_quest

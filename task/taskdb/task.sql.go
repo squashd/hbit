@@ -14,7 +14,7 @@ const createTask = `-- name: CreateTask :one
 INSERT INTO
     task (id, user_id, title)
 VALUES
-    (uuid4(), ?, ?) RETURNING id, user_id, title, text, is_completed, task_type, difficulty, created_at, updated_at
+    (uuid4(), ?, ?) RETURNING id, user_id, title, text, is_completed, task_type, created_at, updated_at, difficulty
 `
 
 type CreateTaskParams struct {
@@ -32,9 +32,9 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 		&i.Text,
 		&i.IsCompleted,
 		&i.TaskType,
-		&i.Difficulty,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Difficulty,
 	)
 	return i, err
 }
@@ -51,21 +51,9 @@ func (q *Queries) DeleteTask(ctx context.Context, id string) error {
 	return err
 }
 
-const deleteUserTasks = `-- name: DeleteUserTasks :exec
-DELETE FROM
-    task
-WHERE
-    user_id = ?
-`
-
-func (q *Queries) DeleteUserTasks(ctx context.Context, userID string) error {
-	_, err := q.db.ExecContext(ctx, deleteUserTasks, userID)
-	return err
-}
-
 const listTasks = `-- name: ListTasks :many
 SELECT
-    id, user_id, title, text, is_completed, task_type, difficulty, created_at, updated_at
+    id, user_id, title, text, is_completed, task_type, created_at, updated_at, difficulty
 FROM
     task
 WHERE
@@ -88,9 +76,9 @@ func (q *Queries) ListTasks(ctx context.Context, userID string) ([]Task, error) 
 			&i.Text,
 			&i.IsCompleted,
 			&i.TaskType,
-			&i.Difficulty,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Difficulty,
 		); err != nil {
 			return nil, err
 		}
@@ -107,7 +95,7 @@ func (q *Queries) ListTasks(ctx context.Context, userID string) ([]Task, error) 
 
 const readTask = `-- name: ReadTask :one
 SELECT
-    id, user_id, title, text, is_completed, task_type, difficulty, created_at, updated_at
+    id, user_id, title, text, is_completed, task_type, created_at, updated_at, difficulty
 FROM
     task
 WHERE
@@ -124,9 +112,9 @@ func (q *Queries) ReadTask(ctx context.Context, id string) (Task, error) {
 		&i.Text,
 		&i.IsCompleted,
 		&i.TaskType,
-		&i.Difficulty,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Difficulty,
 	)
 	return i, err
 }
@@ -141,7 +129,7 @@ SET
     updated_at = ?,
     difficulty = ?
 WHERE
-    id = ? RETURNING id, user_id, title, text, is_completed, task_type, difficulty, created_at, updated_at
+    id = ? RETURNING id, user_id, title, text, is_completed, task_type, created_at, updated_at, difficulty
 `
 
 type UpdateTaskParams struct {
@@ -170,9 +158,9 @@ func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, e
 		&i.Text,
 		&i.IsCompleted,
 		&i.TaskType,
-		&i.Difficulty,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Difficulty,
 	)
 	return i, err
 }

@@ -9,6 +9,7 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/SQUASHD/hbit"
 	"github.com/SQUASHD/hbit/events"
 	"github.com/SQUASHD/hbit/http"
 	"github.com/SQUASHD/hbit/rpg"
@@ -19,24 +20,47 @@ import (
 )
 
 func main() {
-	db, err := rpg.NewDatabase()
+	connectionStr := os.Getenv("RPG_DB_URL")
+	db, err := hbit.NewDatabase(hbit.NewDbParams{
+		ConnectionStr: connectionStr,
+		Driver:        hbit.DbDriverLibsql,
+	})
 	if err != nil {
-		log.Fatalf("failed to connect to rpg database: %v", err)
+		log.Fatalf("cannot connect to rpg database: %s", err)
 	}
+
+	err = hbit.DBMigrateUp(db, hbit.MigrationData{
+		FS:      rpg.Migrations,
+		Dialect: "sqlite",
+		Dir:     "schemas",
+	})
+	if err != nil {
+		log.Fatalf("failed to run migration of rpg database: %v", err)
+	}
+	rabbitmqUrl := os.Getenv("RABBITMQ_URL")
+	rpgPublisher, rpgConn, err := events.NewPublisher(rabbitmqUrl)
+	if err != nil {
+		log.Fatalf("cannot create rpg publisher: %s", err)
+	}
+	defer rpgConn.Close()
+	charPublisher, charConn, err := events.NewPublisher(rabbitmqUrl)
+	if err != nil {
+		log.Fatalf("cannot create rpg publisher: %s", err)
+	}
+	defer charConn.Close()
 
 	queries := rpgdb.New(db)
 
 	questSvc := quest.NewService(db, queries)
-	characterSvc := character.NewService(db, queries)
+	charSvc := character.NewService(db, queries, charPublisher)
 
-	rabbitmqUrl := os.Getenv("RABBITMQ_URL")
-	publisher, conn, err := events.NewPublisher(rabbitmqUrl)
-	if err != nil {
-		log.Fatalf("cannot create rpg publisher: %s", err)
-	}
-	defer conn.Close()
-
-	rpgSvc := rpg.NewService(publisher, queries, db)
+	rpgSvc := rpg.NewService(rpg.NewServiceParams{
+		CharacterSvc: charSvc,
+		QuestSvc:     questSvc,
+		Publisher:    rpgPublisher,
+		Queries:      queries,
+		Db:           db,
+	})
 
 	consumer, conn, err := events.NewRPGEventConsumer(rabbitmqUrl)
 	if err != nil {
@@ -44,7 +68,7 @@ func main() {
 	}
 	defer conn.Close()
 
-	rpgRouter := http.NewRPGRouter(characterSvc, questSvc, rpgSvc)
+	rpgRouter := http.NewRPGRouter(charSvc, questSvc, rpgSvc)
 	wrappedRouter := http.ChainMiddleware(
 		rpgRouter,
 	)
@@ -64,7 +88,6 @@ func main() {
 
 		fmt.Println("\nShutting down server...")
 
-		publisher.Close()
 		consumer.Close()
 
 		ctx, cancel := context.WithTimeout(context.Background(), server.IdleTimeout)
@@ -72,6 +95,10 @@ func main() {
 
 		if err := server.Shutdown(ctx); err != nil {
 			log.Fatalf("Server shutdown failure: %v", err)
+		}
+
+		if err := rpgSvc.CleanUp(); err != nil {
+			log.Fatalf("RPG service cleanup failure: %v", err)
 		}
 
 		close(closed)

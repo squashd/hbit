@@ -2,36 +2,26 @@ package auth
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 
 	"github.com/SQUASHD/hbit"
 	"github.com/SQUASHD/hbit/auth/authdb"
-	"github.com/SQUASHD/hbit/config"
 	"github.com/wagslane/go-rabbitmq"
 )
 
-type (
-	service struct {
-		jwtConfig config.JwtOptions
-		db        *sql.DB
-		queries   *authdb.Queries
-		publisher *rabbitmq.Publisher
-	}
-)
+type UserAuth interface {
+	Login(ctx context.Context, form LoginForm) (AuthDTO, error)
+	Register(ctx context.Context, form CreateUserForm) (AuthDTO, error)
+	DeleteUser(ctx context.Context, userId string) error
+}
 
-func NewService(
-	publisher *rabbitmq.Publisher,
-	jwtConfig config.JwtOptions,
-	db *sql.DB,
-	queries *authdb.Queries,
-) Service {
-	return &service{
-		jwtConfig: jwtConfig,
-		publisher: publisher,
-		db:        db,
-		queries:   queries,
-	}
+// CreateUserForm requires a UserId as registration may now be orchestrated
+// with other services to ensure the application is a consistent state
+type CreateUserForm struct {
+	UserID          string `json:"userId"`
+	Username        string `json:"username"`
+	Password        string `json:"password"`
+	ConfirmPassword string `json:"confirmPassword"`
 }
 
 func (s *service) Register(ctx context.Context, form CreateUserForm) (AuthDTO, error) {
@@ -61,9 +51,9 @@ func (s *service) Register(ctx context.Context, form CreateUserForm) (AuthDTO, e
 		return AuthDTO{}, &hbit.Error{Code: hbit.EINTERNAL, Message: "Failed to hash password"}
 	}
 
-	userData := convertUserFormToModel(form, hashedPassword)
+	createUserParams := convertUserFormToModel(form, hashedPassword)
 
-	user, err := qtx.CreateAuth(ctx, userData)
+	user, err := qtx.CreateAuth(ctx, createUserParams)
 	if err != nil {
 		return AuthDTO{}, err
 	}
@@ -92,7 +82,7 @@ func validateUsername(username string) []*hbit.Error {
 	if len(username) < 5 {
 		errs = append(errs, &hbit.Error{Code: hbit.EINVALID, Message: "username must be at least 5 characters long"})
 	}
-	// TODO: add more validation rules for username
+	// TODO: add more validation rules for username (?)
 	return errs
 }
 
@@ -111,12 +101,20 @@ func validatePassword(password, confirmPassword string) []*hbit.Error {
 	return errs
 }
 
-func convertUserFormToModel(form CreateUserForm, password string) authdb.CreateAuthParams {
+func convertUserFormToModel(
+	form CreateUserForm,
+	hashedPassword string,
+) authdb.CreateAuthParams {
 	return authdb.CreateAuthParams{
 		UserID:         form.UserID,
 		Username:       form.Username,
-		HashedPassword: password,
+		HashedPassword: hashedPassword,
 	}
+}
+
+type LoginForm struct {
+	Username string `json:"username" form:"username"`
+	Password string `json:"password" form:"password"`
 }
 
 func (s *service) Login(ctx context.Context, form LoginForm) (AuthDTO, error) {
@@ -163,12 +161,7 @@ func (s *service) DeleteUser(ctx context.Context, userId string) error {
 	if err != nil {
 		return err
 	}
-	event, err := hbit.NewEventMessage(
-		hbit.AUTHDELETE,
-		hbit.UserId(userId),
-		hbit.NewEventIdWithTimestamp("auth"),
-		nil,
-	)
+	event, err := hbit.NewEventMessage(hbit.NewEventMessageParams{})
 	if err != nil {
 		return err
 	}
@@ -179,7 +172,6 @@ func (s *service) DeleteUser(ctx context.Context, userId string) error {
 	return nil
 }
 
-// Publish implements the hbit.Publisher interface
 func (s *service) Publish(event hbit.EventMessage, routingKeys []string) error {
 
 	msg, err := json.Marshal(&event)

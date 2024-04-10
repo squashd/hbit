@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/SQUASHD/hbit"
 	"github.com/SQUASHD/hbit/auth"
 	"github.com/SQUASHD/hbit/auth/authdb"
 	"github.com/SQUASHD/hbit/config"
@@ -17,10 +18,10 @@ import (
 )
 
 func main() {
+	jwtSecret := os.Getenv("JWT_SECRET")
 	jwtConf := config.NewJwtConfig(
-		config.WithJwtOptionsSecretFromEnv("JWT_SECRET"),
+		config.WithJwtOptionsSecret(jwtSecret),
 	)
-
 	rabbitmqUrl := os.Getenv("RABBITMQ_URL")
 	publisher, conn, err := events.NewPublisher(rabbitmqUrl)
 	if err != nil {
@@ -28,9 +29,21 @@ func main() {
 	}
 	defer conn.Close()
 
-	db, err := auth.NewDatabase()
+	authDbUrl := os.Getenv("AUTH_DB_URL")
+	db, err := hbit.NewDatabase(hbit.NewDbParams{
+		ConnectionStr: authDbUrl,
+		Driver:        hbit.DbDriverLibsql,
+	})
 	if err != nil {
-		log.Fatalf("failed to connect to auth database: %v", err)
+		log.Fatalf("cannot create auth database: %s", err)
+	}
+	err = hbit.DBMigrateUp(db, hbit.MigrationData{
+		FS:      auth.Migrations,
+		Dialect: "sqlite",
+		Dir:     "schemas",
+	})
+	if err != nil {
+		log.Fatalf("failed to run migration of auth database: %v", err)
 	}
 
 	queries := authdb.New(db)
@@ -64,12 +77,13 @@ func main() {
 
 		ctx, cancel := context.WithTimeout(context.Background(), server.IdleTimeout)
 		defer cancel()
-		if err := authSvc.Cleanup(); err != nil {
-			log.Fatalf("Auth service cleanup failure: %v", err)
-		}
 
 		if err := server.Shutdown(ctx); err != nil {
 			log.Fatalf("Server shutdown failure: %v", err)
+		}
+
+		if err := authSvc.Cleanup(); err != nil {
+			log.Fatalf("Auth service cleanup failure: %v", err)
 		}
 
 		close(closed)

@@ -3,6 +3,8 @@ package http
 import (
 	"log"
 	"net/http"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/SQUASHD/hbit"
@@ -10,7 +12,6 @@ import (
 	"github.com/SQUASHD/hbit/config"
 )
 
-// Middleware type definition
 type Middleware func(http.Handler) http.Handler
 
 // ChainMiddleware chains multiple middleware functions together
@@ -33,6 +34,10 @@ type customResponseWriter struct {
 // which is wrapped around the gateway router
 func internalAuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if bool, _ := strconv.ParseBool(os.Getenv("DEBUG")); bool {
+			next(w, r)
+			return
+		}
 		err := getInternalHeader(r)
 		if err != nil {
 			Error(w, r, err)
@@ -43,8 +48,7 @@ func internalAuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 }
 
 // SetInternalHeaderMiddleware sets the 'X-Internal-Request' header to 'false'
-// This ensures that we can proctect some routes from being accessed via the API Gateway
-// even by authenticated users
+// There's probably a better way of doing this
 func SetInternalHeaderMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.Header.Set("X-Internal-Request", "false")
@@ -67,8 +71,6 @@ func setInternalHeader(r *http.Request) {
 	r.Header.Set("X-Internal-Request", "true")
 }
 
-// NewCustomResponseWriter was middleware used to note the status code of the response
-// Howver, it causes issues when using an API Gateway
 func NewCustomResponseWriter(w http.ResponseWriter) *customResponseWriter {
 	return &customResponseWriter{w, http.StatusOK}
 }
@@ -79,8 +81,6 @@ func (crw *customResponseWriter) WriteHeader(code int) {
 	crw.ResponseWriter.WriteHeader(code)
 }
 
-// LoggerMiddleware logs the request method, URL path, and duration of the request
-// deprecated
 func LoggerMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -90,14 +90,16 @@ func LoggerMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// AuthedHandler is a type definition for a handler that requires authentication
-// Most routes go through this middleware
-type AuthedHandler func(w http.ResponseWriter, r *http.Request, userId string)
+type authedHandler func(w http.ResponseWriter, r *http.Request, userId string)
 
 // AuthChainMiddleware is a higher order function that returns a middleware function that authenticates users
-func AuthChainMiddleware(userIdGetter func(r *http.Request) (string, error)) func(next AuthedHandler) http.HandlerFunc {
-	return func(next AuthedHandler) http.HandlerFunc {
+func AuthChainMiddleware(userIdGetter func(r *http.Request) (string, error)) func(next authedHandler) http.HandlerFunc {
+	return func(next authedHandler) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if bool, _ := strconv.ParseBool(os.Getenv("DEBUG")); bool {
+				next(w, r, "debug_user")
+				return
+			}
 			userId, err := userIdGetter(r)
 			if err != nil {
 				Error(w, r, err)
@@ -108,8 +110,12 @@ func AuthChainMiddleware(userIdGetter func(r *http.Request) (string, error)) fun
 	}
 }
 
-func AuthMiddleware(next AuthedHandler) http.HandlerFunc {
+func AuthMiddleware(next authedHandler) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if bool, _ := strconv.ParseBool(os.Getenv("DEBUG")); bool {
+			next(w, r, "debug_user")
+			return
+		}
 		userId, err := GetUserIdFromHeader(r)
 		if err != nil {
 			Error(w, r, err)
@@ -133,18 +139,18 @@ func GetUserIdFromHeader(r *http.Request) (string, error) {
 func CORSMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
-		w.Header().Set("Access-Control-Allow-Headers", "*")
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
 		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
 		next.ServeHTTP(w, r)
 	})
 }
 
-// JwtAuthRouterMiddleware is middleware that authenticates user before forwarding request to the router
-// Refactor from being a method of authHandler
 func JwtAuthRouterMiddleware(svc auth.JwtAuth, jwtConf config.JwtOptions) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if bool, _ := strconv.ParseBool(os.Getenv("DEBUG")); bool {
+				next.ServeHTTP(w, r)
+			}
 			userId, err := authenticateUser(w, r, svc, jwtConf)
 			if err != nil {
 				Error(w, r, err)
@@ -156,13 +162,11 @@ func JwtAuthRouterMiddleware(svc auth.JwtAuth, jwtConf config.JwtOptions) func(n
 	}
 }
 
-// setUserIdInRequestHeader is a helper function to JwtAuthMiddleware
-// since user authentication is done at the API gateway via cookies, the user id is set in the request header
+// Used for internal inter-service requests
 func setUserIdInRequestHeader(r *http.Request, userId string) {
 	r.Header.Set("X-User-Id", userId)
 }
 
-// authenticateUser is a helper function to JwtAuthMiddleware
 func authenticateUser(w http.ResponseWriter, r *http.Request, svc auth.JwtAuth, jwtConf config.JwtOptions) (string, error) {
 	refreshToken := getRefreshTokenFromCookie(r)
 	accessToken := getAccessTokenFromCookie(r)

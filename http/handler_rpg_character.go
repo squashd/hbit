@@ -10,10 +10,10 @@ import (
 )
 
 type characterHandler struct {
-	charSvc character.CharacterManagement
+	charSvc character.UserCharacterService
 }
 
-func newCharacterHandler(charSvc character.CharacterManagement) *characterHandler {
+func newCharacterHandler(charSvc character.UserCharacterService) *characterHandler {
 	return &characterHandler{charSvc: charSvc}
 }
 
@@ -76,11 +76,13 @@ func (h *characterHandler) CharacterUpdate(w http.ResponseWriter, r *http.Reques
 	respondWithJSON(w, http.StatusOK, character)
 }
 
-func (h *characterHandler) CharacterDelete(w http.ResponseWriter, r *http.Request, requestedById string) {
-	userId := r.PathValue("userId")
-	if err := h.charSvc.DeleteCharacter(r.Context(), userId); err != nil {
-		Error(w, r, err)
-		return
-	}
-	respondWithJSON(w, http.StatusOK, nil)
-}
+// deprecated as character deletion is event-based and handled by the top level
+// rpg service
+// func (h *characterHandler) CharacterDelete(w http.ResponseWriter, r *http.Request, requestedById string) {
+// 	userId := r.PathValue("userId")
+// 	if err := h.charSvc.DeleteCharacter(r.Context(), userId); err != nil {
+// 		Error(w, r, err)
+// 		return
+// 	}
+// 	respondWithJSON(w, http.StatusOK, nil)
+// }

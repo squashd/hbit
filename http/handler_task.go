@@ -18,7 +18,7 @@ func newTaskHandler(svc task.UserTaskService) *taskHandler {
 }
 
 func (h *taskHandler) FindAll(w http.ResponseWriter, r *http.Request, userId string) {
-	tasks, err := h.taskSvc.List(r.Context(), userId)
+	tasks, err := h.taskSvc.ListTasks(r.Context(), userId)
 	if err != nil {
 		Error(w, r, err)
 		return
@@ -27,7 +27,7 @@ func (h *taskHandler) FindAll(w http.ResponseWriter, r *http.Request, userId str
 }
 
 func (h *taskHandler) Get(w http.ResponseWriter, r *http.Request, requestedById string) {
-	todos, err := h.taskSvc.List(r.Context(), requestedById)
+	todos, err := h.taskSvc.ListTasks(r.Context(), requestedById)
 	if err != nil {
 		Error(w, r, err)
 		return
@@ -49,7 +49,7 @@ func (h *taskHandler) Create(w http.ResponseWriter, r *http.Request, requestedBy
 		RequestedById:     requestedById,
 	}
 
-	todo, err := h.taskSvc.Create(r.Context(), taskState)
+	todo, err := h.taskSvc.CreateTask(r.Context(), taskState)
 	if err != nil {
 		Error(w, r, err)
 		return
@@ -74,7 +74,7 @@ func (h *taskHandler) Update(w http.ResponseWriter, r *http.Request, requestedBy
 		RequestedById:    requestedById,
 	}
 
-	todo, err := h.taskSvc.Update(r.Context(), taskState)
+	todo, err := h.taskSvc.UpdateTask(r.Context(), taskState)
 	if err != nil {
 		Error(w, r, err)
 		return
@@ -91,7 +91,7 @@ func (h *taskHandler) Delete(w http.ResponseWriter, r *http.Request, requestedBy
 		RequestedById: requestedById,
 	}
 
-	err := h.taskSvc.Delete(r.Context(), taskState)
+	err := h.taskSvc.DeleteTask(r.Context(), taskState)
 	if err != nil {
 		Error(w, r, err)
 		return
@@ -100,8 +100,16 @@ func (h *taskHandler) Delete(w http.ResponseWriter, r *http.Request, requestedBy
 	respondWithJSON(w, http.StatusOK, map[string]string{"result": "success"})
 }
 
-func (h *taskHandler) Done(w http.ResponseWriter, r *http.Request) {
-	var taskState task.TaskStatePayload
+type taskResolutionHandler struct {
+	taskSvc task.TaskResolutionService
+}
+
+func newTaskResolutionHandler(svc task.TaskResolutionService) *taskResolutionHandler {
+	return &taskResolutionHandler{taskSvc: svc}
+}
+
+func (h *taskResolutionHandler) Done(w http.ResponseWriter, r *http.Request) {
+	var taskState task.TaskStateRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&taskState); err != nil {
 		Error(w, r, &hbit.Error{Code: hbit.EINVALID, Message: "Invalid JSON Body"})
@@ -117,8 +125,8 @@ func (h *taskHandler) Done(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, task)
 }
 
-func (h *taskHandler) Undone(w http.ResponseWriter, r *http.Request) {
-	var taskState task.TaskStatePayload
+func (h *taskResolutionHandler) Undone(w http.ResponseWriter, r *http.Request) {
+	var taskState task.TaskStateRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&taskState); err != nil {
 		Error(w, r, &hbit.Error{Code: hbit.EINVALID, Message: "Invalid JSON Body"})

@@ -3,43 +3,35 @@ package task
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"log"
 
 	"github.com/SQUASHD/hbit"
 	"github.com/SQUASHD/hbit/task/taskdb"
-	"github.com/wagslane/go-rabbitmq"
 )
 
-type (
-	service struct {
-		db        *sql.DB
-		queries   *taskdb.Queries
-		publisher *rabbitmq.Publisher
-	}
-)
-
-func NewService(
-	db *sql.DB,
-	queries *taskdb.Queries,
-	publisher *rabbitmq.Publisher,
-) Service {
-	return &service{
-		db:        db,
-		queries:   queries,
-		publisher: publisher,
-	}
+type UserTaskService interface {
+	ListTasks(ctx context.Context, userId string) ([]DTO, error)
+	CreateTask(ctx context.Context, form CreateTaskForm) (DTO, error)
+	UpdateTask(ctx context.Context, form UpdateTaskForm) (DTO, error)
+	DeleteTask(ctx context.Context, form DeleteTaskForm) error
 }
 
-func (s *service) List(ctx context.Context, requestedById string) ([]DTO, error) {
+func (s *service) ListTasks(ctx context.Context, requestedById string) ([]DTO, error) {
 	todos, err := s.queries.ListTasks(ctx, requestedById)
-	if err != nil && err != sql.ErrNoRows {
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
 	dtos := toDTOs(todos)
 	return dtos, nil
 }
 
-func (s *service) Create(ctx context.Context, form CreateTaskForm) (DTO, error) {
+type CreateTaskForm struct {
+	CreateTaskRequest
+	RequestedById string
+}
+
+func (s *service) CreateTask(ctx context.Context, form CreateTaskForm) (DTO, error) {
 	model := CreateFormtoModel(form)
 	task, err := s.queries.CreateTask(ctx, model)
 	if err != nil {
@@ -49,7 +41,7 @@ func (s *service) Create(ctx context.Context, form CreateTaskForm) (DTO, error) 
 	go func() {
 		if err := s.Publish(hbit.EventMessage{
 			Type:    hbit.TASKCREATED,
-			UserId:  hbit.UserId(form.RequestedById),
+			UserId:  form.RequestedById,
 			EventId: hbit.NewEventIdWithTimestamp("task"),
 			Payload: []byte{},
 		}, []string{"task.created"}); err != nil {
@@ -61,7 +53,13 @@ func (s *service) Create(ctx context.Context, form CreateTaskForm) (DTO, error) 
 	return dto, nil
 }
 
-func (s *service) Update(ctx context.Context, form UpdateTaskForm) (DTO, error) {
+type UpdateTaskForm struct {
+	taskdb.UpdateTaskParams
+	TaskId        string
+	RequestedById string
+}
+
+func (s *service) UpdateTask(ctx context.Context, form UpdateTaskForm) (DTO, error) {
 	if form.UpdateTaskParams.ID != form.TaskId {
 		return DTO{}, &hbit.Error{Code: hbit.EUNAUTHORIZED, Message: "unauthorized"}
 	}
@@ -83,7 +81,12 @@ func (s *service) Update(ctx context.Context, form UpdateTaskForm) (DTO, error) 
 	return dto, nil
 }
 
-func (s *service) Delete(ctx context.Context, form DeleteTaskForm) error {
+type DeleteTaskForm struct {
+	TaskId        string
+	RequestedById string
+}
+
+func (s *service) DeleteTask(ctx context.Context, form DeleteTaskForm) error {
 	task, err := s.queries.ReadTask(ctx, form.TaskId)
 	if err != nil {
 		return err
@@ -98,4 +101,3 @@ func (s *service) Delete(ctx context.Context, form DeleteTaskForm) error {
 	}
 	return nil
 }
-

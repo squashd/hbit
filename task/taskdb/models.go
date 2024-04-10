@@ -15,7 +15,7 @@ type Task struct {
 	Text        string    `json:"text"`
 	IsCompleted bool      `json:"is_completed"`
 	TaskType    string    `json:"task_type"`
-	Difficulty  string    `json:"difficulty"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
+	Difficulty  string    `json:"difficulty"`
 }

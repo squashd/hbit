@@ -33,10 +33,6 @@ func SetUpAPIGateway(
 
 	// Auth handler is set here since we do authentication at the gateway level
 	authHandler := newAuthHandler(authSvc, jwtConf)
-	// Orchestrator for tasks
-	taskOrchestrator := NewTaskOrchestrationRouter(&http.Client{})
-	// Orchestrator for registration
-	registrationOrch := NewRegistrationOrchestrator(authSvc, os.Getenv("RPG_SVC_URL"), &http.Client{})
 
 	// Entry point for the gateway
 	// Centralizing authentication and registration
@@ -46,11 +42,13 @@ func SetUpAPIGateway(
 
 	// Catch all route
 	entry.HandleFunc("/", notFound)
-
 	gateway.Handle("/auth/", http.StripPrefix("/auth", entry))
 
 	// Auth / unprotected routes
 	entry.HandleFunc("POST /login", authHandler.Login)
+
+	// Orchestrator for registration
+	registrationOrch := NewRegistrationOrchestrator(authSvc, os.Getenv("RPG_SVC_URL"), &http.Client{})
 	entry.HandleFunc("POST /register", registrationOrch.OrchestrateRegistration)
 	entry.HandleFunc("GET /verify", Verify(authSvc, jwtConf))
 
@@ -65,6 +63,8 @@ func SetUpAPIGateway(
 	// RPG service - driven by task completion but managed independently
 	gateway.Handle("/rpg/", authMiddleware(http.StripPrefix("/rpg", rpgSvcProxy)))
 
+	// Orchestrator for tasks
+	taskOrchestrator := NewTaskOrchestrationRouter(&http.Client{})
 	// Since the tasks done and undo are the driver of events, they are handled by the orchestrator
 	// to provide a unified response to the client.
 	gateway.Handle("POST /tasks/{id}/{action}", authMiddleware(http.StripPrefix("/tasks", taskOrchestrator)))

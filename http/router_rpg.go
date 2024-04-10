@@ -9,8 +9,8 @@ import (
 )
 
 func NewRPGRouter(
-	charSvc character.CharacterService,
-	questSvc quest.QuestService,
+	charSvc character.Service,
+	questSvc quest.Service,
 	rpgSvc rpg.Service,
 ) *http.ServeMux {
 	rpgRouter := http.NewServeMux()
@@ -28,8 +28,6 @@ func NewRPGRouter(
 	questHandler := newQuestHandler(questSvc)
 	rpgRouter.HandleFunc("GET /quests", userAuthMiddleware(questHandler.GetAll))
 
-	// Currently just calculates and undoes rewards for a user
-	// Hopefully this will be expanded to include more RPG functionality
 	rpgHandler := newRPGHandler(rpgSvc)
 	rpgRouter.HandleFunc("POST /rewards/calculate", internalAuthMiddleware(rpgHandler.CalculateRewards))
 	rpgRouter.HandleFunc("POST /rewards/undo", internalAuthMiddleware(rpgHandler.UndoRewards))

@@ -1,6 +1,7 @@
 package hbit
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -10,8 +11,6 @@ import (
 
 // Event types
 // Because Go does not have enums... sad
-// I do not want event types to be routing keys as consumer should be able to
-// subscribe to multiple event types without knowing the routing key
 const (
 	TASKDONE    EventType = "task_done"
 	TASKUNDO    EventType = "task_undo"
@@ -31,26 +30,25 @@ const (
 type (
 	EventType string
 	EventId   string
-	// TODO: Consider setting all userId params as a type alias
-	UserId string
+	UserId    string
 
 	// EventMessage is a unified event message that can be published
 	// to the message broker. The payload is a json.RawMessage to allow
 	// for any type of payload and avoid unnecessary marshalling
 	EventMessage struct {
 		Type    EventType       `json:"type"`
-		UserId  UserId          `json:"user_id"`
+		UserId  string          `json:"user_id"`
 		EventId EventId         `json:"event_id"`
 		Payload json.RawMessage `json:"payload"`
 	}
 
 	Publisher interface {
-		Publish(msg EventMessage, routingKey []string) error
+		Publish(event EventMessage, routingKeys []string) error
 	}
 
-	// All service need to implement this interface
+	// All services need to implement this interface
 	UserDataHandler interface {
-		DeleteData(userId string) error
+		DeleteData(ctx context.Context, userId string) error
 	}
 )
 
@@ -72,7 +70,6 @@ func (u UserId) Valid() error {
 	return nil
 }
 
-// TODO: Refactor middleware to use this function
 func NewUserId() UserId {
 	return UserId(NewUUID())
 }
@@ -91,26 +88,28 @@ func ExtractTimestampFromEventID(eventId string) string {
 	return eventId[len(eventId)-36 : len(eventId)-6]
 }
 
+type NewEventMessageParams struct {
+	EventType EventType
+	UserId    string
+	EventId   EventId
+	Payload   any // can be nil
+}
+
 // NewEventMessage — we try a bit of type enforcement. As a treat.
-func NewEventMessage(
-	eventType EventType,
-	userId UserId,
-	eventId EventId,
-	payload any,
-) (EventMessage, error) {
-	if payload == nil {
-		payload = map[string]interface{}{}
+func NewEventMessage(params NewEventMessageParams) (EventMessage, error) {
+	if params.Payload == nil {
+		params.Payload = map[string]interface{}{}
 	}
 
-	payloadBytes, err := json.Marshal(payload)
+	payloadBytes, err := json.Marshal(params.Payload)
 	if err != nil {
 		return EventMessage{}, err
 	}
 
 	event := EventMessage{
-		Type:    eventType,
-		UserId:  userId,
-		EventId: eventId,
+		Type:    params.EventType,
+		UserId:  params.UserId,
+		EventId: params.EventId,
 		Payload: payloadBytes,
 	}
 

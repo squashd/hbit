@@ -4,7 +4,14 @@ import (
 	"context"
 
 	"github.com/SQUASHD/hbit"
+	"github.com/SQUASHD/hbit/auth/authdb"
 )
+
+type JwtAuth interface {
+	AuthenticateUser(ctx context.Context, accessToken string) (userId string, err error)
+	RefreshToken(ctx context.Context, refreshToken string) (accessToken, userId string, err error)
+	RevokeToken(ctx context.Context, form RevokeTokenForm) error
+}
 
 func (s *service) AuthenticateUser(ctx context.Context, accessToken string) (userId string, err error) {
 	id, err := ValidateJWT(accessToken, s.jwtConfig.JwtSecret)
@@ -47,6 +54,11 @@ func (s *service) makeRefreshToken(userId string) (string, error) {
 		return "", &hbit.Error{Code: hbit.EINTERNAL, Message: "failed to generate access token"}
 	}
 	return accessToken, nil
+}
+
+type RevokeTokenForm struct {
+	authdb.CreateRevokedTokenParams
+	RequesterId string `json:"requester_id"`
 }
 
 func (s *service) RevokeToken(ctx context.Context, form RevokeTokenForm) error {

@@ -2,9 +2,12 @@ package auth
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/SQUASHD/hbit"
 	"github.com/SQUASHD/hbit/auth/authdb"
+	"github.com/SQUASHD/hbit/config"
+	"github.com/wagslane/go-rabbitmq"
 )
 
 type (
@@ -15,39 +18,24 @@ type (
 		IsAdmin(ctx context.Context, userId string) (bool, error)
 		Cleanup() error
 	}
-
-	UserAuth interface {
-		Login(ctx context.Context, form LoginForm) (AuthDTO, error)
-		Register(ctx context.Context, form CreateUserForm) (AuthDTO, error)
-		// DeleteUser deletes a user and all associated data and also publsihes an event
-		// Currently only services is orchestrated with registration, but it may be necessary to
-		// orchestrate with other services in the future
-		DeleteUser(ctx context.Context, userId string) error
-	}
-
-	// JwtAuth is the interface for handling JWT tokens
-	JwtAuth interface {
-		AuthenticateUser(ctx context.Context, accessToken string) (userId string, err error)
-		RefreshToken(ctx context.Context, refreshToken string) (accessToken, userId string, err error)
-		RevokeToken(ctx context.Context, form RevokeTokenForm) error
-	}
-
-	LoginForm struct {
-		Username string `json:"username" form:"username"`
-		Password string `json:"password" form:"password"`
-	}
-
-	RevokeTokenForm struct {
-		authdb.CreateRevokedTokenParams
-		RequesterId string `json:"requester_id"`
-	}
-
-	// CreateUserForm requires a UserId as registration may now be orchestrated
-	// with other services to ensure the application is a consistent state
-	CreateUserForm struct {
-		UserID          string `json:"userId"`
-		Username        string `json:"username"`
-		Password        string `json:"password"`
-		ConfirmPassword string `json:"confirmPassword"`
+	service struct {
+		jwtConfig config.JwtOptions
+		db        *sql.DB
+		queries   *authdb.Queries
+		publisher *rabbitmq.Publisher
 	}
 )
+
+func NewService(
+	publisher *rabbitmq.Publisher,
+	jwtConfig config.JwtOptions,
+	db *sql.DB,
+	queries *authdb.Queries,
+) Service {
+	return &service{
+		jwtConfig: jwtConfig,
+		publisher: publisher,
+		db:        db,
+		queries:   queries,
+	}
+}

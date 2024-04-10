@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/SQUASHD/hbit"
 	"github.com/SQUASHD/hbit/http"
 	"github.com/SQUASHD/hbit/user"
 	"github.com/SQUASHD/hbit/user/userdb"
@@ -15,13 +16,26 @@ import (
 )
 
 func main() {
-	db, err := user.NewDatabase()
+	connectionStr := os.Getenv("USER_DB_URL")
+	db, err := hbit.NewDatabase(hbit.NewDbParams{
+		ConnectionStr: connectionStr,
+		Driver:        hbit.DbDriverLibsql,
+	})
 	if err != nil {
-		log.Fatalf("failed to connect to user database: %v", err)
+		log.Fatalf("cannot connect to user database: %s", err)
 	}
 
-	quries := userdb.New(db)
-	userSvc := user.NewService(db, quries)
+	err = hbit.DBMigrateUp(db, hbit.MigrationData{
+		FS:      user.Migrations,
+		Dialect: "sqlite",
+		Dir:     "schemas",
+	})
+	if err != nil {
+		log.Fatalf("failed to run migration of user database: %v", err)
+	}
+
+	queries := userdb.New(db)
+	userSvc := user.NewService(db, queries)
 
 	userRouter := http.NewUserRouter(userSvc)
 	wrappedRouter := http.ChainMiddleware(
@@ -52,6 +66,7 @@ func main() {
 
 		close(closed)
 	}()
+
 	fmt.Printf("Server is running on port %s\n", server.Addr)
 	if err = server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("cannot start server: %s", err)

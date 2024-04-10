@@ -54,7 +54,7 @@ func (o *orchestratorReg) OrchestrateRegistration(w http.ResponseWriter, r *http
 		character.CreateCharacterForm
 	}{
 		CreateUserForm: auth.CreateUserForm{
-			UserID:          userId, // Previously we used SQLi to generate a UUID
+			UserID:          userId, // Previously we used SQLite to generate a UUID
 			Username:        form.Username,
 			Password:        form.Password,
 			ConfirmPassword: form.ConfirmPassword,
@@ -94,21 +94,20 @@ func (o *orchestratorReg) OrchestrateRegistration(w http.ResponseWriter, r *http
 			// since authErr is not nil, we can assume that the user was not created
 			// and we should not attempt to delete the user
 			// instead we should publish an event to delete the user
-			var pubErr error
-			event, err := hbit.NewEventMessage(
-				hbit.AUTHDELETE,
-				hbit.UserId(userId),
-				hbit.NewEventIdWithTimestamp("auth"),
-				nil,
-			)
+			event, err := hbit.NewEventMessage(hbit.NewEventMessageParams{
+				EventType: hbit.AUTHDELETE,
+				UserId:    userId,
+				EventId:   hbit.NewEventIdWithTimestamp("orchestrator"),
+				Payload:   nil,
+			})
 			if err != nil {
 				LogError(r, err)
 				return
 			}
 
-			pubErr = o.authSvc.Publish(event, []string{"auth.delete"})
-			if pubErr != nil {
-				LogError(r, pubErr)
+			err = o.authSvc.Publish(event, []string{"auth.delete"})
+			if err != nil {
+				LogError(r, err)
 				return
 			}
 		}()
@@ -134,7 +133,7 @@ func (o *orchestratorReg) OrchestrateRegistration(w http.ResponseWriter, r *http
 		return
 	}
 
-	var charDTO character.DTO
+	var charDTO character.CharacterDTO
 	if err := json.NewDecoder(rpgRes.Body).Decode(&charDTO); err != nil {
 		Error(w, r, err)
 		return
@@ -142,17 +141,15 @@ func (o *orchestratorReg) OrchestrateRegistration(w http.ResponseWriter, r *http
 
 	registrationRes := struct {
 		auth.AuthDTO
-		character.DTO
+		character.CharacterDTO
 	}{
-		AuthDTO: authDto,
-		DTO:     charDTO,
+		AuthDTO:      authDto,
+		CharacterDTO: charDTO,
 	}
 
 	respondWithJSON(w, http.StatusCreated, registrationRes)
 }
 
-// A wrapper around the auth service's Register method in case we want to offload
-// authentication to a separate service
 func (o *orchestratorReg) callCreateAuth(ctx context.Context, form auth.CreateUserForm) (auth.AuthDTO, error) {
 	userDto, err := o.authSvc.Register(ctx, form)
 	if err != nil {
@@ -161,8 +158,6 @@ func (o *orchestratorReg) callCreateAuth(ctx context.Context, form auth.CreateUs
 	return userDto, nil
 }
 
-// A wrapper around the auth service's DeleteUser method in case we want to offload
-// authentication to a separate service
 func (o *orchestratorReg) callDeleteAuth(ctx context.Context, userId string) error {
 	err := o.authSvc.DeleteUser(ctx, userId)
 	if err != nil {

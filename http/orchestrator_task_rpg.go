@@ -52,11 +52,12 @@ func (o *orchestratorTask) OrchestrateTaskDone(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	taskStatePayload := task.TaskStatePayload{
+	taskReq := task.TaskStateRequest{
 		TaskId: taskId,
 		UserId: userId,
 	}
-	rpgRewardPayload := rpg.CaclulateRewardPayload{
+
+	rewardReq := rpg.TaskRewardRequest{
 		Difficulty: task.TaskDifficulty(request.Difficulty),
 		UserId:     userId,
 	}
@@ -69,20 +70,22 @@ func (o *orchestratorTask) OrchestrateTaskDone(w http.ResponseWriter, r *http.Re
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		taskRes, taskErr = o.callTaskDone(taskStatePayload)
+		taskRes, taskErr = o.callTaskDone(taskReq)
 	}()
 	go func() {
 		defer wg.Done()
-		rpgRes, rpgErr = o.callRPGTaskDone(rpgRewardPayload)
+		rpgRes, rpgErr = o.callRPGTaskDone(rewardReq)
 	}()
 	wg.Wait()
 
 	if rpgErr != nil && taskErr == nil {
 		go func() {
-			if _, err := o.callTaskUndo(taskStatePayload); err != nil {
+			res, err := o.callTaskUndo(taskReq)
+			if err != nil {
 				log.Println(err)
 				return
 			}
+			res.Body.Close()
 		}()
 		Error(w, r, rpgErr)
 		return
@@ -90,10 +93,12 @@ func (o *orchestratorTask) OrchestrateTaskDone(w http.ResponseWriter, r *http.Re
 
 	if taskErr != nil && rpgErr == nil {
 		go func() {
-			if _, err := o.callRPGTaskUndo(rpgRewardPayload); err != nil {
+			res, err := o.callRPGTaskUndo(rewardReq)
+			if err != nil {
 				log.Println(err)
 				return
 			}
+			res.Body.Close()
 		}()
 		Error(w, r, taskErr)
 		return
@@ -112,10 +117,12 @@ func (o *orchestratorTask) OrchestrateTaskDone(w http.ResponseWriter, r *http.Re
 		err := parseResponseError(taskRes)
 		operationErrors = append(operationErrors, err)
 		go func() {
-			if _, err := o.callRPGTaskUndo(rpgRewardPayload); err != nil {
+			res, err := o.callRPGTaskUndo(rewardReq)
+			if err != nil {
 				log.Println(err)
 				return
 			}
+			res.Body.Close()
 		}()
 	}
 
@@ -123,10 +130,12 @@ func (o *orchestratorTask) OrchestrateTaskDone(w http.ResponseWriter, r *http.Re
 		err := parseResponseError(rpgRes)
 		operationErrors = append(operationErrors, err)
 		go func() {
-			if _, err := o.callTaskUndo(taskStatePayload); err != nil {
+			res, err := o.callTaskUndo(taskReq)
+			if err != nil {
 				log.Println(err)
 				return
 			}
+			res.Body.Close()
 		}()
 	}
 
@@ -136,7 +145,7 @@ func (o *orchestratorTask) OrchestrateTaskDone(w http.ResponseWriter, r *http.Re
 	}
 
 	var taskDTO task.DTO
-	var rpgPayload rpg.TaskRewardPayload
+	var rpgPayload rpg.TaskRewardResponse
 
 	var resErrs []error
 	var taskResErr, rpgResErr error
@@ -166,8 +175,8 @@ func (o *orchestratorTask) OrchestrateTaskDone(w http.ResponseWriter, r *http.Re
 	}
 
 	taskDoneRes := struct {
-		Task   task.DTO              `json:"task"`
-		Reward rpg.TaskRewardPayload `json:"reward"`
+		Task   task.DTO               `json:"task"`
+		Reward rpg.TaskRewardResponse `json:"reward"`
 	}{
 		Task:   taskDTO,
 		Reward: rpgPayload,
@@ -177,7 +186,7 @@ func (o *orchestratorTask) OrchestrateTaskDone(w http.ResponseWriter, r *http.Re
 
 }
 
-func (o *orchestratorTask) callTaskDone(payload task.TaskStatePayload) (*http.Response, error) {
+func (o *orchestratorTask) callTaskDone(payload task.TaskStateRequest) (*http.Response, error) {
 	taskData, err := json.Marshal(payload)
 	if err != nil {
 		return nil, err
@@ -199,7 +208,7 @@ func (o *orchestratorTask) callTaskDone(payload task.TaskStatePayload) (*http.Re
 	return resp, nil
 }
 
-func (o *orchestratorTask) callTaskUndo(payload task.TaskStatePayload) (*http.Response, error) {
+func (o *orchestratorTask) callTaskUndo(payload task.TaskStateRequest) (*http.Response, error) {
 	taskData, err := json.Marshal(payload)
 	if err != nil {
 		return nil, err
@@ -221,7 +230,7 @@ func (o *orchestratorTask) callTaskUndo(payload task.TaskStatePayload) (*http.Re
 	return resp, nil
 }
 
-func (o *orchestratorTask) callRPGTaskDone(payload rpg.CaclulateRewardPayload) (*http.Response, error) {
+func (o *orchestratorTask) callRPGTaskDone(payload rpg.TaskRewardRequest) (*http.Response, error) {
 	taskData, err := json.Marshal(payload)
 	if err != nil {
 		return nil, err
@@ -242,7 +251,7 @@ func (o *orchestratorTask) callRPGTaskDone(payload rpg.CaclulateRewardPayload) (
 	return resp, nil
 }
 
-func (o *orchestratorTask) callRPGTaskUndo(payload rpg.CaclulateRewardPayload) (*http.Response, error) {
+func (o *orchestratorTask) callRPGTaskUndo(payload rpg.TaskRewardRequest) (*http.Response, error) {
 	taskData, err := json.Marshal(payload)
 	if err != nil {
 		return nil, err
@@ -273,15 +282,15 @@ func (o *orchestratorTask) OrchestrateTaskUndo(w http.ResponseWriter, r *http.Re
 
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
-		Error(w, r, &hbit.Error{Code: hbit.EINVALID, Message: "Invalid request payload"})
+		Error(w, r, &hbit.Error{Code: hbit.EINVALID, Message: "Invalid JSON Body"})
 		return
 	}
 
-	taskStatePayload := task.TaskStatePayload{
+	taskReq := task.TaskStateRequest{
 		TaskId: taskId,
 		UserId: userId,
 	}
-	rpgRewardPayload := rpg.CaclulateRewardPayload{
+	rewardReq := rpg.TaskRewardRequest{
 		Difficulty: task.TaskDifficulty(request.Difficulty),
 		UserId:     userId,
 	}
@@ -294,17 +303,17 @@ func (o *orchestratorTask) OrchestrateTaskUndo(w http.ResponseWriter, r *http.Re
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		taskRes, taskErr = o.callTaskUndo(taskStatePayload)
+		taskRes, taskErr = o.callTaskUndo(taskReq)
 	}()
 	go func() {
 		defer wg.Done()
-		rpgRes, rpgErr = o.callRPGTaskUndo(rpgRewardPayload)
+		rpgRes, rpgErr = o.callRPGTaskUndo(rewardReq)
 	}()
 	wg.Wait()
 
 	if rpgErr != nil && taskErr == nil {
 		go func() {
-			if _, err := o.callTaskDone(taskStatePayload); err != nil {
+			if _, err := o.callTaskDone(taskReq); err != nil {
 				log.Println(err)
 				return
 			}
@@ -315,7 +324,7 @@ func (o *orchestratorTask) OrchestrateTaskUndo(w http.ResponseWriter, r *http.Re
 
 	if taskErr != nil && rpgErr == nil {
 		go func() {
-			if _, err := o.callRPGTaskDone(rpgRewardPayload); err != nil {
+			if _, err := o.callRPGTaskDone(rewardReq); err != nil {
 				log.Println(err)
 				return
 			}
@@ -335,7 +344,7 @@ func (o *orchestratorTask) OrchestrateTaskUndo(w http.ResponseWriter, r *http.Re
 		err := parseResponseError(taskRes)
 		operationErrors = append(operationErrors, err)
 		go func() {
-			if _, err := o.callRPGTaskUndo(rpgRewardPayload); err != nil {
+			if _, err := o.callRPGTaskUndo(rewardReq); err != nil {
 				log.Println(err)
 				return
 			}
@@ -346,7 +355,7 @@ func (o *orchestratorTask) OrchestrateTaskUndo(w http.ResponseWriter, r *http.Re
 		err := parseResponseError(rpgRes)
 		operationErrors = append(operationErrors, err)
 		go func() {
-			if _, err := o.callTaskUndo(taskStatePayload); err != nil {
+			if _, err := o.callTaskUndo(taskReq); err != nil {
 				log.Println(err)
 				return
 			}
@@ -359,7 +368,7 @@ func (o *orchestratorTask) OrchestrateTaskUndo(w http.ResponseWriter, r *http.Re
 	}
 
 	var taskDTO task.DTO
-	var rpgPayload rpg.TaskRewardPayload
+	var rpgPayload rpg.UnresolvedTaskPayload
 
 	var resErrs []error
 	var taskResErr, rpgResErr error
@@ -389,8 +398,8 @@ func (o *orchestratorTask) OrchestrateTaskUndo(w http.ResponseWriter, r *http.Re
 	}
 
 	taskDoneRes := struct {
-		Task   task.DTO              `json:"task"`
-		Reward rpg.TaskRewardPayload `json:"reward"`
+		Task   task.DTO                  `json:"task"`
+		Reward rpg.UnresolvedTaskPayload `json:"reward"`
 	}{
 		Task:   taskDTO,
 		Reward: rpgPayload,

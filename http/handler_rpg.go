@@ -19,14 +19,14 @@ func newRPGHandler(rpgSvc rpg.Service) *rpgHandler {
 }
 
 func (h *rpgHandler) CalculateRewards(w http.ResponseWriter, r *http.Request) {
-	var payload rpg.CaclulateRewardPayload
+	var req rpg.TaskRewardRequest
 
-	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		Error(w, r, &hbit.Error{Code: hbit.EINVALID, Message: "Invalid JSON Body"})
 		return
 	}
 
-	rewards, err := h.rpgSvc.CalculateRewards(payload.UserId, payload.Difficulty)
+	rewards, err := h.rpgSvc.CalculateRewards(r.Context(), req)
 	if err != nil {
 		Error(w, r, err)
 		return
@@ -36,14 +36,14 @@ func (h *rpgHandler) CalculateRewards(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *rpgHandler) UndoRewards(w http.ResponseWriter, r *http.Request) {
-	var payload rpg.CaclulateRewardPayload
+	var req rpg.TaskRewardRequest
 
-	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		Error(w, r, &hbit.Error{Code: hbit.EINVALID, Message: "Invalid JSON Body"})
 		return
 	}
 
-	rewards, err := h.rpgSvc.UndoRewards(payload.UserId, payload.Difficulty)
+	rewards, err := h.rpgSvc.UndoRewards(r.Context(), req)
 	if err != nil {
 		Error(w, r, err)
 		return

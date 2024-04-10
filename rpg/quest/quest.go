@@ -2,65 +2,41 @@ package quest
 
 import (
 	"context"
-	"time"
+	"database/sql"
 
+	"github.com/SQUASHD/hbit"
 	"github.com/SQUASHD/hbit/rpg/rpgdb"
 )
 
 type (
 	// Top level service for instantiation
-	QuestService interface {
-		QuestManagement
-		EventQuestService
-		InternalQuestService
-	}
-
-	QuestManagement interface {
-		ListQuests(ctx context.Context, userId string) ([]QuestDTO, error)
-	}
-
-	EventQuestService interface {
-		DeleteUserQuests(userId string) error
-	}
-
-	InternalQuestService interface {
+	Service interface {
+		UserQuestService
+		InternalUserQuestUtils
+		hbit.UserDataHandler
 		CleanUp() error
 	}
 
-	QuestDTO struct {
-		QuestID     string    `json:"quest_id"`
-		QuestType   string    `json:"quest_type"`
-		Description string    `json:"description"`
-		Title       string    `json:"title"`
-		Details     string    `json:"details"`
-		UpdatedAt   time.Time `json:"updated_at"`
-	}
-
-	BossQuestDetails struct {
-		BossID string `json:"boss_id"`
-	}
-
-	ItemQuestDetails struct {
-		ItemID      string `json:"item_id"`
-		DropsNeeded int    `json:"drops_needed"`
+	service struct {
+		db      *sql.DB
+		queries *rpgdb.Queries
 	}
 )
 
-func questToDTO(quest rpgdb.Quest) QuestDTO {
-	return QuestDTO{
-		QuestID:     quest.QuestID,
-		QuestType:   quest.QuestType,
-		Description: quest.Description,
-		Title:       quest.Title,
-		Details:     quest.Details,
-		UpdatedAt:   quest.UpdatedAt,
+func NewService(
+	db *sql.DB,
+	queries *rpgdb.Queries,
+) Service {
+	return &service{
+		db:      db,
+		queries: queries,
 	}
 }
 
-func questsToDTOs(quests []rpgdb.Quest) []QuestDTO {
-	dtos := make([]QuestDTO, len(quests))
-	for i, quest := range quests {
-		dtos[i] = questToDTO(quest)
-	}
-	return dtos
+func (s *service) DeleteData(ctx context.Context, userId string) error {
+	return s.queries.DeleteUserQuestData(ctx, userId)
+}
+
+func (s *service) CleanUp() error {
+	return s.db.Close()
 }

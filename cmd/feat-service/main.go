@@ -9,6 +9,7 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/SQUASHD/hbit"
 	"github.com/SQUASHD/hbit/events"
 	"github.com/SQUASHD/hbit/feat"
 	"github.com/SQUASHD/hbit/feat/featdb"
@@ -17,9 +18,22 @@ import (
 )
 
 func main() {
-	db, err := feat.NewDatabase()
+	connectionStr := os.Getenv("ACH_DB_URL")
+	db, err := hbit.NewDatabase(hbit.NewDbParams{
+		ConnectionStr: connectionStr,
+		Driver:        hbit.DbDriverLibsql,
+	})
 	if err != nil {
-		log.Fatalf("failed to connect to feat database: %v", err)
+		log.Fatalf("cannot connect to feat database: %s", err)
+	}
+
+	err = hbit.DBMigrateUp(db, hbit.MigrationData{
+		FS:      feat.Migrations,
+		Dialect: "sqlite",
+		Dir:     "schemas",
+	})
+	if err != nil {
+		log.Fatalf("failed to run migration of feat database: %v", err)
 	}
 
 	rabbitmqUrl := os.Getenv("RABBITMQ_URL")
@@ -61,12 +75,17 @@ func main() {
 		ctx, cancel := context.WithTimeout(context.Background(), server.IdleTimeout)
 		defer cancel()
 
+		if err := featSvc.CleanUp(); err != nil {
+			log.Fatalf("Feat service cleanup failure: %v", err)
+		}
+
 		if err := server.Shutdown(ctx); err != nil {
 			log.Fatalf("Server shutdown failure: %v", err)
 		}
 
 		close(closed)
 	}()
+
 	var wg sync.WaitGroup
 	wg.Add(1)
 
@@ -78,10 +97,12 @@ func main() {
 			log.Fatalf("cannot start consuming: %s", err)
 		}
 	}()
+
 	fmt.Printf("Server is running on port %s\n", server.Addr)
 	if err = server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("cannot start server: %s", err)
 	}
+
 	wg.Wait()
 
 	<-closed

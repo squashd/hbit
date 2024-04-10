@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/SQUASHD/hbit"
 	"github.com/SQUASHD/hbit/auth"
 	"github.com/SQUASHD/hbit/auth/authdb"
 	"github.com/SQUASHD/hbit/config"
@@ -17,6 +18,25 @@ import (
 )
 
 func main() {
+
+	connectionStr := os.Getenv("TASK_DB_URL")
+	db, err := hbit.NewDatabase(hbit.NewDbParams{
+		ConnectionStr: connectionStr,
+		Driver:        hbit.DbDriverLibsql,
+	})
+	if err != nil {
+		log.Fatalf("cannot connect to auth database: %s", err)
+	}
+
+	err = hbit.DBMigrateUp(db, hbit.MigrationData{
+		FS:      auth.Migrations,
+		Dialect: "sqlite",
+		Dir:     "schemas",
+	})
+	if err != nil {
+		log.Fatalf("failed to run migration of auth database: %v", err)
+	}
+
 	jwtConf := config.NewJwtConfig(
 		config.WithJwtOptionsSecretFromEnv("JWT_SECRET"),
 	)
@@ -28,11 +48,6 @@ func main() {
 		log.Fatalf("cannot create auth publisher: %s", err)
 	}
 	defer conn.Close()
-
-	db, err := auth.NewDatabase()
-	if err != nil {
-		log.Fatalf("failed to connect to auth database: %v", err)
-	}
 
 	queries := authdb.New(db)
 

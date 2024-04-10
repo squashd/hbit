@@ -2,47 +2,71 @@ package character
 
 import (
 	"context"
+	"database/sql"
+	"encoding/json"
 
+	"github.com/SQUASHD/hbit"
 	"github.com/SQUASHD/hbit/rpg/rpgdb"
+	"github.com/wagslane/go-rabbitmq"
 )
 
 type (
 	// Aggregate service for instantiation top level, should not be used directly
-	CharacterService interface {
-		CharacterManagement
+	Service interface {
+		UserCharacterService
 		AdminCharacterService
+		InternalUserCharacterUtils
+		hbit.Publisher
 		CleanUp() error
 	}
 
-	CharacterManagement interface {
-		CreateCharacter(ctx context.Context, form CreateCharacterForm) (DTO, error)
-		GetCharacter(ctx context.Context, userId string) (DTO, error)
-		UpdateCharacter(ctx context.Context, form UpdateCharacterForm) (DTO, error)
-		DeleteCharacter(ctx context.Context, userId string) error
+	UserCharacterService interface {
+		GetCharacter(ctx context.Context, userId string) (CharacterDTO, error)
+		CreateCharacter(ctx context.Context, form CreateCharacterForm) (CharacterDTO, error)
+		UpdateCharacter(ctx context.Context, form UpdateCharacterForm) (CharacterDTO, error)
 	}
 
 	AdminCharacterService interface {
-		List(ctx context.Context) ([]DTO, error)
+		List(ctx context.Context) ([]CharacterDTO, error)
 	}
 
-	CreateCharacterForm struct {
-		rpgdb.CreateCharacterParams
-		RequestedById string `json:"requested_by_id"`
-	}
-
-	ReadCharacterForm struct {
-		RequestedById string `json:"requested_by_id"`
-		CharacterId   string `json:"character_id"`
-	}
-
-	UpdateCharacterForm struct {
-		rpgdb.UpdateCharacterParams
-		RequestedById string `json:"requested_by_id"`
-		CharacterId   string `json:"character_id"`
-	}
-
-	DeleteCharacterForm struct {
-		RequestedById string `json:"requested_by_id"`
-		CharacterId   string `json:"character_id"`
+	service struct {
+		db        *sql.DB
+		queries   *rpgdb.Queries
+		publisher *rabbitmq.Publisher
 	}
 )
+
+func NewService(
+	db *sql.DB,
+	queries *rpgdb.Queries,
+	publisher *rabbitmq.Publisher,
+) Service {
+	return &service{
+		db:        db,
+		queries:   queries,
+		publisher: publisher,
+	}
+}
+
+func (s *service) Publish(event hbit.EventMessage, routingKeys []string) error {
+	msg, err := json.Marshal(event)
+	if err != nil {
+		return err
+	}
+	err = s.publisher.Publish(
+		msg,
+		routingKeys,
+		rabbitmq.WithPublishOptionsContentType("application/json"),
+		rabbitmq.WithPublishOptionsExchange("events"),
+	)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *service) CleanUp() error {
+	s.publisher.Close()
+	return nil
+}

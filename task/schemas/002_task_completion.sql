@@ -75,3 +75,5 @@ SELECT
     updated_at
 FROM
     task_backup;
+
+DROP TABLE task_backup

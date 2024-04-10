@@ -3,37 +3,79 @@ package main
 import (
 	"errors"
 	"fmt"
-	"sync"
+	"log"
+	"os"
 
+	"github.com/SQUASHD/hbit"
 	"github.com/SQUASHD/hbit/feat"
 	"github.com/SQUASHD/hbit/rpg"
 	"github.com/SQUASHD/hbit/task"
 	"github.com/SQUASHD/hbit/user"
+	_ "github.com/tursodatabase/libsql-client-go/libsql"
 )
 
 func main() {
-	var errs []error
-	var wg sync.WaitGroup
 	var rpgDownErr, userDownErr, featDownErr, taskDownErr error
-	wg.Add(4)
-	go func() {
-		defer wg.Done()
-		rpgDownErr = rpg.DatabaseDown()
-	}()
-	go func() {
-		defer wg.Done()
-		userDownErr = user.DatabaseDown()
-	}()
-	go func() {
-		defer wg.Done()
-		featDownErr = feat.DatabaseDown()
-	}()
-	go func() {
-		defer wg.Done()
-		taskDownErr = task.DatabaseDown()
-	}()
-	wg.Wait()
+	// RPG DB DOWN
+	connectionStr := os.Getenv("RPG_DB_URL")
+	db, err := hbit.NewDatabase(hbit.NewDbParams{
+		ConnectionStr: connectionStr,
+		Driver:        hbit.DbDriverLibsql,
+	})
+	if err != nil {
+		log.Fatalf("cannot connect to rpg database: %s", err)
+	}
+	rpgDownErr = hbit.DBMigratedDownTo(db, 0, hbit.MigrationData{
+		FS:      rpg.Migrations,
+		Dialect: "sqlite",
+		Dir:     "schemas",
+	})
 
+	// TASK DB DOWN
+	connectionStr = os.Getenv("TASK_DB_URL")
+	db, err = hbit.NewDatabase(hbit.NewDbParams{
+		ConnectionStr: connectionStr,
+		Driver:        hbit.DbDriverLibsql,
+	})
+	if err != nil {
+		log.Fatalf("cannot connect to task database: %s", err)
+	}
+	taskDownErr = hbit.DBMigratedDownTo(db, 0, hbit.MigrationData{
+		FS:      task.Migrations,
+		Dialect: "sqlite",
+		Dir:     "schemas",
+	})
+	// USER DB DOWN
+	connectionStr = os.Getenv("USER_DB_URL")
+	db, err = hbit.NewDatabase(hbit.NewDbParams{
+		ConnectionStr: connectionStr,
+		Driver:        hbit.DbDriverLibsql,
+	})
+	if err != nil {
+		log.Fatalf("cannot connect to user database: %s", err)
+	}
+	userDownErr = hbit.DBMigratedDownTo(db, 0, hbit.MigrationData{
+		FS:      user.Migrations,
+		Dialect: "sqlite",
+		Dir:     "schemas",
+	})
+
+	// FEAT DB DOWN
+	connectionStr = os.Getenv("ACH_DB_URL")
+	db, err = hbit.NewDatabase(hbit.NewDbParams{
+		ConnectionStr: connectionStr,
+		Driver:        hbit.DbDriverLibsql,
+	})
+	if err != nil {
+		log.Fatalf("cannot connect to feat database: %s", err)
+	}
+	featDownErr = hbit.DBMigratedDownTo(db, 0, hbit.MigrationData{
+		FS:      feat.Migrations,
+		Dialect: "sqlite",
+		Dir:     "schemas",
+	})
+
+	var errs []error
 	for _, err := range []error{rpgDownErr, userDownErr, featDownErr, taskDownErr} {
 		if err != nil {
 			errs = append(errs, err)

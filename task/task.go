@@ -1,49 +1,58 @@
 package task
 
 import (
-	"context"
+	"database/sql"
+	"encoding/json"
 
+	"github.com/SQUASHD/hbit"
 	"github.com/SQUASHD/hbit/task/taskdb"
+	"github.com/wagslane/go-rabbitmq"
 )
 
 type (
 	Service interface {
 		UserTaskService
-		InternalService
-	}
-
-	CreateTaskForm struct {
-		CreateTaskRequest
-		RequestedById string
-	}
-
-	UpdateTaskForm struct {
-		taskdb.UpdateTaskParams
-		TaskId        string
-		RequestedById string
-	}
-
-	DeleteTaskForm struct {
-		TaskId        string
-		RequestedById string
-	}
-
-	UserTaskService interface {
-		List(ctx context.Context, userId string) ([]DTO, error)
-		Create(ctx context.Context, form CreateTaskForm) (DTO, error)
-		Update(ctx context.Context, form UpdateTaskForm) (DTO, error)
-		Delete(ctx context.Context, form DeleteTaskForm) error
-		TaskDone(ctx context.Context, payload TaskStatePayload) (DTO, error)
-		TaskUndone(ctx context.Context, payload TaskStatePayload) (DTO, error)
-	}
-
-	TaskStatePayload struct {
-		TaskId string `json:"taskId"`
-		UserId string `json:"userId"`
-	}
-
-	InternalService interface {
-		DeleteUserTasks(userId string) error
+		TaskResolutionService
+		hbit.UserDataHandler
 		CleanUp() error
 	}
+
+	service struct {
+		db        *sql.DB
+		queries   *taskdb.Queries
+		publisher *rabbitmq.Publisher
+	}
 )
+
+func NewService(
+	db *sql.DB,
+	queries *taskdb.Queries,
+	publisher *rabbitmq.Publisher,
+) Service {
+	return &service{
+		db:        db,
+		queries:   queries,
+		publisher: publisher,
+	}
+}
+
+func (s *service) Publish(event hbit.EventMessage, routingKeys []string) error {
+	msg, err := json.Marshal(event)
+	if err != nil {
+		return err
+	}
+	err = s.publisher.Publish(
+		msg,
+		routingKeys,
+		rabbitmq.WithPublishOptionsContentType("application/json"),
+		rabbitmq.WithPublishOptionsExchange("events"),
+	)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *service) CleanUp() error {
+	return s.db.Close()
+}
